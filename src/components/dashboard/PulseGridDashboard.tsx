@@ -658,22 +658,7 @@ export const PulseGridDashboard: React.FC<{ onOpenSOS: () => void }> = ({ onOpen
             </div>
           </button>
 
-          {/* Language Switcher Pills - matching the screenshot */}
-          <div className="hidden md:flex items-center gap-1 bg-slate-100 p-1 rounded-xl">
-            {([{ code: 'en', label: 'English' }, { code: 'hi', label: 'हिन्दी (Hindi)' }, { code: 'te', label: 'తెలుగు (Telugu)' }, { code: 'mr', label: 'मराठी (Marathi)' }] as const).map(l => (
-              <button
-                key={l.code}
-                onClick={() => setLanguage(l.code as any)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
-                  currentLanguage === l.code
-                    ? 'bg-blue-600 text-white shadow-sm'
-                    : 'text-slate-600 hover:bg-white hover:text-slate-900'
-                }`}
-              >
-                {l.label}
-              </button>
-            ))}
-          </div>
+
         </div>
 
         {/* Top Navbar Mesh Tabs - Translated */}
@@ -2356,21 +2341,24 @@ export const PulseGridDashboard: React.FC<{ onOpenSOS: () => void }> = ({ onOpen
                   <div className="text-xs font-bold text-slate-900">{t.interfaceLanguage}</div>
                   <div className="text-[11px] text-slate-500">{t.languageDesc}</div>
                 </div>
-                <div className="flex gap-2">
-                  {[
-                    { code: 'en', label: 'English' },
-                    { code: 'hi', label: 'हिन्दी (Hindi)' },
-                    { code: 'te', label: 'తెలుగు (Telugu)' },
-                    { code: 'mr', label: 'मराठी (Marathi)' }
-                  ].map(l => (
+                <div className="flex gap-1.5 bg-slate-100 p-1 rounded-xl">
+                  {([
+                    { code: 'en', native: 'English', flag: '🇬🇧' },
+                    { code: 'hi', native: 'हिन्दी', flag: '🇮🇳' },
+                    { code: 'te', native: 'తెలుగు', flag: '🏛️' },
+                    { code: 'mr', native: 'मराठी', flag: '🟠' }
+                  ] as const).map(l => (
                     <button
                       key={l.code}
                       onClick={() => setLanguage(l.code as any)}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition ${
-                        currentLanguage === l.code ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                      className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition ${
+                        currentLanguage === l.code
+                          ? 'bg-white text-slate-900 shadow-sm ring-1 ring-slate-200'
+                          : 'text-slate-500 hover:text-slate-800'
                       }`}
                     >
-                      {l.label}
+                      <span className="text-base leading-none">{l.flag}</span>
+                      <span>{l.native}</span>
                     </button>
                   ))}
                 </div>
