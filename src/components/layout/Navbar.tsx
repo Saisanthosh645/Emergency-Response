@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useEmergency } from '../../context/EmergencyContext';
 import { TRANSLATIONS, Language } from '../../utils/i18n';
 import { PWAInstallButton } from '../common/PWAInstallButton';
@@ -12,15 +12,108 @@ import {
   Globe, 
   Wifi, 
   WifiOff,
-  LogOut
+  LogOut,
+  ChevronDown,
+  Check
 } from 'lucide-react';
 
+// ─── Language metadata ────────────────────────────────────────────────────────
+const LANGUAGES: { code: Language; label: string; native: string; flag: string }[] = [
+  { code: 'en', label: 'English',  native: 'English', flag: '🇬🇧' },
+  { code: 'hi', label: 'Hindi',    native: 'हिन्दी',   flag: '🇮🇳' },
+  { code: 'te', label: 'Telugu',   native: 'తెలుగు',   flag: '🏛️' },
+  { code: 'mr', label: 'Marathi',  native: 'मराठी',   flag: '🟠' },
+];
+
+// ─── Language Dropdown ────────────────────────────────────────────────────────
+const LanguagePicker: React.FC = () => {
+  const { currentLanguage, setLanguage } = useEmergency();
+  const [open, setOpen] = useState(false);
+  const dropRef = useRef<HTMLDivElement>(null);
+
+  const current = LANGUAGES.find(l => l.code === currentLanguage) ?? LANGUAGES[0];
+
+  // Close on outside click
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (dropRef.current && !dropRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+
+  const handleSelect = (lang: Language) => {
+    setLanguage(lang);
+    setOpen(false);
+  };
+
+  return (
+    <div ref={dropRef} className="relative">
+      {/* Trigger button */}
+      <button
+        onClick={() => setOpen(o => !o)}
+        className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-xs font-semibold transition-all duration-150 ${
+          open
+            ? 'bg-slate-800 border-slate-600 text-white'
+            : 'bg-slate-900 border-slate-800 text-slate-300 hover:text-white hover:border-slate-700'
+        }`}
+        title="Change language"
+      >
+        <Globe className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+        <span className="hidden sm:inline font-medium">{current.native}</span>
+        <ChevronDown className={`w-3 h-3 text-slate-400 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
+      </button>
+
+      {/* Dropdown panel */}
+      {open && (
+        <div className="absolute right-0 top-full mt-2 z-[9000] w-44 bg-[#0c1120] border border-slate-700/80 rounded-2xl shadow-2xl shadow-black/60 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150">
+          {/* Header */}
+          <div className="px-3 py-2 border-b border-slate-800 flex items-center gap-1.5">
+            <Globe className="w-3 h-3 text-cyan-400" />
+            <span className="text-[10px] font-mono font-bold text-slate-400 tracking-widest uppercase">Language</span>
+          </div>
+
+          {/* Options */}
+          <div className="p-1.5 space-y-0.5">
+            {LANGUAGES.map(lang => {
+              const isActive = currentLanguage === lang.code;
+              return (
+                <button
+                  key={lang.code}
+                  onClick={() => handleSelect(lang.code)}
+                  className={`w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl text-left text-xs transition-all duration-100 ${
+                    isActive
+                      ? 'bg-red-600/20 border border-red-500/30 text-white'
+                      : 'text-slate-300 hover:bg-slate-800/80 hover:text-white border border-transparent'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="text-base leading-none">{lang.flag}</span>
+                    <div>
+                      <div className="font-bold text-[11px]">{lang.native}</div>
+                      <div className="text-[9px] text-slate-500 font-mono">{lang.label}</div>
+                    </div>
+                  </div>
+                  {isActive && <Check className="w-3 h-3 text-red-400 shrink-0" />}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ─── Main Navbar ──────────────────────────────────────────────────────────────
 export const Navbar: React.FC<{ onShowLanding: () => void; isLanding: boolean }> = ({ onShowLanding, isLanding }) => {
   const { 
     activeRole, 
     setActiveRole, 
-    currentLanguage, 
-    setLanguage, 
+    currentLanguage,
     isTemporarilyLoggedOut,
     setTemporarilyLoggedOut,
     isOfflineMode, 
@@ -122,7 +215,7 @@ export const Navbar: React.FC<{ onShowLanding: () => void; isLanding: boolean }>
         </button>
       </div>
 
-      {/* Right Controls: Language, Offline Toggle, PWA Install */}
+      {/* Right Controls */}
       <div className="flex items-center gap-2">
         
         {/* Offline Simulator Button */}
@@ -138,23 +231,8 @@ export const Navbar: React.FC<{ onShowLanding: () => void; isLanding: boolean }>
           {isOfflineMode ? <WifiOff className="w-3.5 h-3.5 text-rose-400" /> : <Wifi className="w-3.5 h-3.5" />}
         </button>
 
-        {/* Multilingual Selector */}
-        <div className="flex items-center bg-slate-900 border border-slate-800 rounded-lg p-0.5 text-xs">
-          <Globe className="w-3 h-3 text-slate-400 ml-1.5 mr-1" />
-          {(['en', 'hi', 'te', 'mr'] as Language[]).map(lang => (
-            <button
-              key={lang}
-              onClick={() => setLanguage(lang)}
-              className={`px-1.5 py-0.5 rounded text-[11px] font-bold uppercase transition ${
-                currentLanguage === lang 
-                  ? 'bg-red-600 text-white' 
-                  : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              {lang === 'en' ? 'EN' : lang === 'hi' ? 'हिन्दी' : lang === 'te' ? 'తెలుగు' : 'मराठी'}
-            </button>
-          ))}
-        </div>
+        {/* ── Language Picker Dropdown ── */}
+        <LanguagePicker />
 
         {/* In-App PWA Install */}
         <PWAInstallButton />
