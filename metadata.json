@@ -1,0 +1,6 @@
+{
+  "name": "Lifeline India",
+  "description": "Hyperlocal Emergency Response Platform with AI Triage, Real-time Dispatch, and Good Samaritan Network",
+  "requestFramePermissions": ["geolocation"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
