@@ -87,8 +87,8 @@ export const LandingHero: React.FC<{ onSelectRole: (role: 'citizen' | 'responder
 
             <div className="p-3 rounded-2xl bg-slate-900/60 border border-slate-800/40">
               <div className="text-[10px] text-slate-400 uppercase font-mono">Multilingual AI</div>
-              <div className="text-3xl font-black font-mono text-amber-400 mt-0.5">3 Lang</div>
-              <div className="text-[10px] text-slate-500 mt-1">English • हिन्दी • తెలుగు</div>
+              <div className="text-3xl font-black font-mono text-amber-400 mt-0.5">4 Lang</div>
+              <div className="text-[10px] text-slate-500 mt-1">English • हिन्दी • తెలుగు • मराठी</div>
             </div>
           </div>
         </div>
@@ -119,7 +119,7 @@ export const LandingHero: React.FC<{ onSelectRole: (role: 'citizen' | 'responder
               <p className="text-xs text-slate-400 leading-relaxed space-y-1">
                 <span>• Giant 2-second hold SOS button with haptics</span><br />
                 <span>• Silent SOS triple power-tap simulation</span><br />
-                <span>• Voice notes in English, Hindi & Telugu</span><br />
+                <span>• Voice notes in English, Hindi, Telugu & Marathi</span><br />
                 <span>• Instant Gemini AI clinical first-aid instructions</span><br />
                 <span>• Live Leaflet GPS tracking & encrypted chat</span>
               </p>

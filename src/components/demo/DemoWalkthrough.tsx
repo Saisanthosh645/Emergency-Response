@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useEmergency } from '../../context/EmergencyContext';
+import { TRANSLATIONS } from '../../utils/i18n';
 import { sound } from '../../utils/audio';
 import { 
   Play, 
@@ -33,8 +34,11 @@ export const DemoWalkthrough: React.FC = () => {
     smartDispatch, 
     setActiveRole, 
     resetToDemo,
-    activeIncident 
+    activeIncident,
+    currentLanguage
   } = useEmergency();
+
+  const t = TRANSLATIONS[currentLanguage] || TRANSLATIONS.en;
 
   const [currentStepIndex, setCurrentStepIndex] = useState<number>(0);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
@@ -54,7 +58,7 @@ export const DemoWalkthrough: React.FC = () => {
       title: '2. Gemini AI Triage & First-Aid',
       subtitle: 'Sub-second Clinical Assessment',
       role: 'citizen',
-      description: 'Gemini AI evaluates the trauma severity as CRITICAL (96% confidence). It immediately generates 3 step-by-step bleeding control instructions in Telugu/English and alerts nearby Good Samaritans.',
+      description: 'Gemini AI evaluates the trauma severity as CRITICAL (96% confidence). It immediately generates 3 step-by-step bleeding control instructions in Marathi/Telugu/Hindi/English and alerts nearby Good Samaritans.',
       actionLabel: 'View AI Triage & First Aid',
       icon: Sparkles,
       durationMs: 12000
@@ -198,22 +202,30 @@ export const DemoWalkthrough: React.FC = () => {
   };
 
   return (
-    <div className="w-full max-w-4xl mx-auto min-h-screen bg-[#070b14] text-slate-100 p-6 flex flex-col justify-between">
+    <div className="w-full h-full bg-[#070b14] text-slate-100 overflow-y-auto flex flex-col">
       
       {/* Demo Header */}
-      <div>
-        <div className="flex items-center justify-between mb-4">
+      <div className="bg-[#090d16] border-b border-slate-800 px-6 py-3 flex items-center justify-between shrink-0">
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => setActiveRole('citizen')}
+            className="flex items-center gap-1.5 text-xs font-semibold text-slate-400 hover:text-white transition pr-4 border-r border-slate-700"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
+            <span>{t.back}</span>
+          </button>
           <div>
             <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-ping" />
-              <h1 className="text-lg font-black tracking-wide text-white uppercase font-mono">
-                90-SECOND HACKATHON LIVE DEMO STORY
+              <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping" />
+              <h1 className="text-sm font-black tracking-wide text-white uppercase font-mono">
+                90-SECOND HACKATHON LIVE DEMO
               </h1>
             </div>
-            <p className="text-xs text-slate-400 mt-1">
-              "From emergency to responder in under 60 seconds." A complete walkthrough of the road accident near Hitech City.
+            <p className="text-[10px] text-slate-400 mt-0.5">
+              {t.fromTo}
             </p>
           </div>
+        </div>
 
           <div className="flex items-center gap-2">
             <button
@@ -237,6 +249,9 @@ export const DemoWalkthrough: React.FC = () => {
             </button>
           </div>
         </div>
+
+        {/* Inner content wrapper */}
+        <div className="flex-1 p-6 max-w-4xl mx-auto w-full">
 
         {/* Step Progress Bar */}
         <div className="bg-slate-900 h-2 rounded-full overflow-hidden border border-slate-800 mb-6">

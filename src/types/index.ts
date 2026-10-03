@@ -7,7 +7,7 @@ export type EmergencyType =
   | 'Disaster'
   | 'Animal Rescue';
 
-export type SeverityLevel = 'Critical' | 'High' | 'Medium' | 'Low';
+export type SeverityLevel = 'Critical' | 'High' | 'Medium' | 'Moderate' | 'Low';
 
 export type IncidentStatus = 
   | 'Reported'
@@ -91,6 +91,7 @@ export interface Hospital {
   id: string;
   name: string;
   area: string;
+  address?: string;
   location: {
     lat: number;
     lng: number;
@@ -104,6 +105,59 @@ export interface Hospital {
   emergencyPhone: string;
   traumaLevel: 'Level 1 Trauma' | 'Level 2 Trauma' | 'General Tertiary';
   specialistOnDuty: string;
+  rating?: number;
+  proximityKm?: number;
+  waitTimeMin?: number;
+  categoryTag?: string;
+  facilityType?: 'all' | 'trauma' | 'clinic';
+}
+
+export interface HospitalBedBooking {
+  id: string;
+  hospitalId: string;
+  hospitalName: string;
+  patientName: string;
+  patientPhone: string;
+  patientAge: string;
+  patientGender: string;
+  condition: string;
+  bedType: 'icu_ventilator' | 'cardiac_cicu' | 'hdu' | 'trauma_bay';
+  transportMode: 'ambulance' | 'private_vehicle' | 'need_dispatch';
+  notes?: string;
+  timestamp: number;
+  token: string;
+  status: 'CONFIRMED' | 'IN_TRANSIT' | 'ARRIVED' | 'CANCELLED';
+  erBayAssigned: string;
+  leadPhysician: string;
+}
+
+export interface BloodBank {
+  id: string;
+  name: string;
+  area: string;
+  address: string;
+  distanceKm: number;
+  phone: string;
+  inventory: Record<string, number>;
+  verified: boolean;
+  coldChainActive: boolean;
+}
+
+export interface BloodReservation {
+  id: string;
+  bloodBankId: string;
+  bloodBankName: string;
+  bloodGroup: string;
+  unitsCount: number;
+  patientName: string;
+  patientPhone: string;
+  patientHospital: string;
+  urgencyLevel: 'Emergency STAT' | 'Urgent (Within 2 Hours)' | 'Scheduled Surgery';
+  coldChainCourierAssigned: string;
+  token: string;
+  temperatureCelsius: number;
+  timestamp: number;
+  status: 'CONFIRMED' | 'DISPATCHED_IN_TRANSIT' | 'DELIVERED';
 }
 
 export interface Incident {
@@ -116,6 +170,7 @@ export interface Incident {
   description: string;
   location: LocationPoint;
   timestamp: number;
+  createdAt?: number;
   assignedResponderId?: string;
   assignedResponder?: Responder;
   assignedHospitalId?: string;
@@ -129,7 +184,30 @@ export interface Incident {
   isDuplicateOf?: string;
   isSimulated?: boolean;
   escalationTier: number; // 0 = standard, 1 = radius expanded (60s+), 2 = supervisor alerted
+  escalationLevel?: number;
   offlineQueued?: boolean;
+  coordinatingResponders?: { responderId: string; responder: Responder; role: string }[];
+  greenCorridorActive?: boolean;
+  sha256Hash?: string;
+  milestoneMetrics?: IncidentMilestoneMetrics;
+}
+
+export interface NavigationTurnStep {
+  instruction: string;
+  distanceMeters: number;
+  roadName: string;
+  icon: 'straight' | 'left' | 'right' | 'u-turn' | 'destination';
+}
+
+export interface SystemNotification {
+  id: string;
+  timestamp: number;
+  title: string;
+  message: string;
+  type?: 'escalation' | 'dispatch' | 'arrival' | 'alert' | 'comms' | 'system' | string;
+  severity?: 'critical' | 'high' | 'info' | 'low';
+  incidentId?: string;
+  read: boolean;
 }
 
 export interface AreaAlert {
@@ -161,4 +239,47 @@ export interface AuditLogItem {
   actor: string;
   details: string;
   severity: 'info' | 'warning' | 'critical';
+}
+
+export interface DataAccessLogEntry {
+  id: string;
+  timestamp: number;
+  actor: string;
+  action: string;
+  target: string;
+  purpose: string;
+  ipMasked: string;
+}
+
+export interface PrivacySettings {
+  anonymizePhone: boolean;
+  maskCitizenName: boolean;
+  fuzzyResolvedLocation: boolean;
+  ephemeralGpsActive: boolean;
+  autoPurgeDays: number;
+  encryptionStandard: 'AES-256-GCM (Hardware Backed)' | 'ChaCha20-Poly1305';
+  dpdpConsentLogged: boolean;
+}
+
+export interface IncidentMilestoneMetrics {
+  callInitiatedTime: number;
+  triageDurationSeconds: number;
+  dispatchLatencySeconds: number;
+  wheelRollDurationSeconds: number;
+  onSceneArrivalSeconds: number;
+  handoverDurationSeconds?: number;
+  totalResolutionSeconds?: number;
+  slaTargetSeconds: number;
+  isSlaMet: boolean;
+  sha256Checksum: string;
+  slaMet?: boolean;
+  cryptographicChecksum?: string;
+  totalResponseSeconds?: number;
+  t0_callReceived?: number;
+  t1_triageVerified?: number;
+  t2_unitDispatched?: number;
+  t3_wheelsRolling?: number;
+  t4_onSceneArrival?: number;
+  t5_hospitalHandover?: number;
+  t6_incidentResolved?: number;
 }

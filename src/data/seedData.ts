@@ -1,8 +1,203 @@
-import { Responder, Hospital, Incident, AreaAlert } from '../types';
+import { Responder, Hospital, Incident, AreaAlert, BloodBank } from '../types';
 
 export const HYDERABAD_CENTER = { lat: 17.3850, lng: 78.4867 };
 
+export const SEED_BLOOD_BANKS: BloodBank[] = [
+  {
+    id: 'BB-LIFELINE-01',
+    name: 'Lifeline Central Blood Bank',
+    area: 'HSR Layout Sector 3',
+    address: 'HSR Layout Sector 3',
+    distanceKm: 2.1,
+    phone: '+91 80 4122 8800',
+    verified: true,
+    coldChainActive: true,
+    inventory: { 'O-': 8, 'O+': 24, 'A+': 18, 'A-': 6, 'B+': 20, 'B-': 5, 'AB+': 12, 'AB-': 4 }
+  },
+  {
+    id: 'BB-RED-CROSS-02',
+    name: 'Red Cross Donor Station',
+    area: 'Koramangala 5th Block',
+    address: 'Koramangala 5th Block',
+    distanceKm: 3.7,
+    phone: '+91 80 2553 4567',
+    verified: true,
+    coldChainActive: true,
+    inventory: { 'O-': 4, 'O+': 16, 'A+': 12, 'A-': 3, 'B+': 14, 'B-': 2, 'AB+': 7, 'AB-': 2 }
+  },
+  {
+    id: 'BB-STJOHNS-03',
+    name: "St. John's Hospital Blood Bank",
+    area: 'Sarjapur Road',
+    address: 'Sarjapur Road',
+    distanceKm: 3.5,
+    phone: '+91 80 2206 5050',
+    verified: true,
+    coldChainActive: true,
+    inventory: { 'O-': 11, 'O+': 35, 'A+': 28, 'A-': 8, 'B+': 32, 'B-': 7, 'AB+': 15, 'AB-': 6 }
+  },
+  {
+    id: 'BB-ROTARY-04',
+    name: 'Rotary TTK Blood Center',
+    area: 'Indiranagar',
+    address: 'Indiranagar',
+    distanceKm: 6.2,
+    phone: '+91 80 2528 7903',
+    verified: false,
+    coldChainActive: true,
+    inventory: { 'O-': 0, 'O+': 15, 'A+': 10, 'A-': 2, 'B+': 12, 'B-': 1, 'AB+': 5, 'AB-': 0 }
+  },
+  {
+    id: 'BB-RASHTROTTHANA-05',
+    name: 'Rashtrotthana Blood Centre',
+    area: 'Chamrajpet',
+    address: 'Bull Temple Road, Chamrajpet',
+    distanceKm: 5.4,
+    phone: '+91 80 2661 1424',
+    verified: true,
+    coldChainActive: true,
+    inventory: { 'O-': 7, 'O+': 22, 'A+': 16, 'A-': 5, 'B+': 19, 'B-': 4, 'AB+': 8, 'AB-': 3 }
+  },
+  {
+    id: 'BB-NARAYANA-06',
+    name: 'Narayana Health City Blood Bank',
+    area: 'Bommasandra',
+    address: '258/A, Bommasandra Industrial Area',
+    distanceKm: 8.8,
+    phone: '+91 80 7122 2299',
+    verified: true,
+    coldChainActive: true,
+    inventory: { 'O-': 16, 'O+': 48, 'A+': 38, 'A-': 14, 'B+': 42, 'B-': 11, 'AB+': 22, 'AB-': 9 }
+  }
+];
+
 export const SEED_HOSPITALS: Hospital[] = [
+  {
+    id: 'HOSP-FORTIS-01',
+    name: 'Fortis Emergency Hospital',
+    area: 'Bannerghatta Road',
+    address: '154/9, Bannerghatta Road',
+    location: { lat: 12.8954, lng: 77.5986 },
+    totalBeds: 650,
+    availableIcuBeds: 11,
+    availableTraumaBeds: 8,
+    availableVentilators: 7,
+    oxygenReserveDays: 14,
+    bloodUnitsAvailable: { 'O+': 28, 'O-': 6, 'A+': 18, 'B+': 32, 'AB+': 10 },
+    emergencyPhone: '+91 80 6621 4444',
+    traumaLevel: 'Level 1 Trauma',
+    specialistOnDuty: 'Dr. Anand Kumar (Lead Trauma Surgeon)',
+    rating: 4.9,
+    proximityKm: 1.2,
+    waitTimeMin: 8,
+    categoryTag: 'LEVEL 1 TRAUMA',
+    facilityType: 'trauma'
+  },
+  {
+    id: 'HOSP-APOLLO-CARD-02',
+    name: 'Apollo Cardiac Specialty',
+    area: 'Bannerghatta Road',
+    address: '154/11, Bannerghatta Road',
+    location: { lat: 12.8920, lng: 77.5992 },
+    totalBeds: 450,
+    availableIcuBeds: 3,
+    availableTraumaBeds: 4,
+    availableVentilators: 5,
+    oxygenReserveDays: 12,
+    bloodUnitsAvailable: { 'O+': 22, 'O-': 4, 'A+': 15, 'B+': 25, 'AB+': 8 },
+    emergencyPhone: '+91 80 2630 4050',
+    traumaLevel: 'Level 1 Trauma',
+    specialistOnDuty: 'Dr. Priya Varma (Chief Interventional Cardiologist)',
+    rating: 4.8,
+    proximityKm: 2.8,
+    waitTimeMin: 15,
+    categoryTag: 'CARDIAC EMERGENCY',
+    facilityType: 'trauma'
+  },
+  {
+    id: 'HOSP-STJOHNS-03',
+    name: "St. John's General Emergency",
+    area: 'Sarjapur Road, Koramangala',
+    address: 'Sarjapur Road, Koramangala',
+    location: { lat: 12.9298, lng: 77.6206 },
+    totalBeds: 1350,
+    availableIcuBeds: 24,
+    availableTraumaBeds: 12,
+    availableVentilators: 15,
+    oxygenReserveDays: 18,
+    bloodUnitsAvailable: { 'O+': 45, 'O-': 12, 'A+': 30, 'B+': 40, 'AB+': 16 },
+    emergencyPhone: '+91 80 2206 5000',
+    traumaLevel: 'Level 1 Trauma',
+    specialistOnDuty: "Dr. Anthony D'Souza (Chief Emergency Medicine)",
+    rating: 4.6,
+    proximityKm: 3.5,
+    waitTimeMin: 5,
+    categoryTag: 'GENERAL ER',
+    facilityType: 'trauma'
+  },
+  {
+    id: 'HOSP-HSR-CLINIC-04',
+    name: 'HSR Emergency Clinic',
+    area: 'HSR Layout Sector 2',
+    address: 'HSR Layout Sector 2',
+    location: { lat: 12.9116, lng: 77.6433 },
+    totalBeds: 80,
+    availableIcuBeds: 5,
+    availableTraumaBeds: 3,
+    availableVentilators: 2,
+    oxygenReserveDays: 7,
+    bloodUnitsAvailable: { 'O+': 10, 'O-': 2, 'A+': 8, 'B+': 12, 'AB+': 4 },
+    emergencyPhone: '+91 80 4123 9900',
+    traumaLevel: 'Level 2 Trauma',
+    specialistOnDuty: 'Dr. Rajesh Patel (Urgent Care Specialist)',
+    rating: 4.7,
+    proximityKm: 1.5,
+    waitTimeMin: 3,
+    categoryTag: 'TRIAGE & URGENT CARE',
+    facilityType: 'clinic'
+  },
+  {
+    id: 'HOSP-MANIPAL-05',
+    name: 'Manipal Hospital Hal Road',
+    area: 'HAL Airport Road',
+    address: '98, HAL Airport Road',
+    location: { lat: 12.9587, lng: 77.6493 },
+    totalBeds: 600,
+    availableIcuBeds: 15,
+    availableTraumaBeds: 7,
+    availableVentilators: 9,
+    oxygenReserveDays: 15,
+    bloodUnitsAvailable: { 'O+': 35, 'O-': 8, 'A+': 24, 'B+': 36, 'AB+': 12 },
+    emergencyPhone: '+91 80 2502 4444',
+    traumaLevel: 'Level 1 Trauma',
+    specialistOnDuty: 'Dr. Sudarshan Ballal (Critical Care Lead)',
+    rating: 4.9,
+    proximityKm: 5.1,
+    waitTimeMin: 12,
+    categoryTag: 'MULTI-SPECIALTY',
+    facilityType: 'trauma'
+  },
+  {
+    id: 'HOSP-NARAYANA-06',
+    name: 'Narayana Health City',
+    area: 'Bommasandra',
+    address: '258/A, Bommasandra',
+    location: { lat: 12.8228, lng: 77.6896 },
+    totalBeds: 1400,
+    availableIcuBeds: 32,
+    availableTraumaBeds: 14,
+    availableVentilators: 20,
+    oxygenReserveDays: 20,
+    bloodUnitsAvailable: { 'O+': 50, 'O-': 15, 'A+': 35, 'B+': 45, 'AB+': 18 },
+    emergencyPhone: '+91 80 7122 2222',
+    traumaLevel: 'Level 1 Trauma',
+    specialistOnDuty: 'Dr. Devi Shetty (Cardiac & Pediatric Trauma)',
+    rating: 4.8,
+    proximityKm: 8.4,
+    waitTimeMin: 6,
+    categoryTag: 'PEDIATRIC EMERGENCY',
+    facilityType: 'trauma'
+  },
   {
     id: 'HOSP-NIMS-01',
     name: "Nizam's Institute of Medical Sciences (NIMS)",
@@ -972,6 +1167,324 @@ export const INITIAL_INCIDENTS: Incident[] = [
     ],
     chatMessages: [],
     escalationTier: 0
+  },
+  {
+    id: 'INC-2026-HYD-035',
+    type: 'Medical',
+    severity: 'Critical',
+    status: 'Resolved',
+    citizenName: 'Dr. Ramesh Nambiar',
+    citizenPhone: '+91 98480 •••••',
+    description: 'Acute STEMI myocardial infarction in elderly male. Defibrillation and CPR executed by ALS crew.',
+    location: {
+      lat: 17.4305,
+      lng: 78.4080,
+      address: 'Villa 18, Road No 45, Jubilee Hills, Hyderabad',
+      area: 'Jubilee Hills',
+      accuracyMeters: 4
+    },
+    timestamp: Date.now() - 86400000, // 24 hours ago
+    assignedResponderId: 'RES-ALS-01',
+    assignedHospitalId: 'HOSP-APOLLO-02',
+    etaSeconds: 0,
+    aiTriage: {
+      emergencyType: 'Medical',
+      severity: 'Critical',
+      confidence: 99,
+      recommendedResponder: 'ALS Ambulance & Cath Lab Specialist',
+      firstAidInstructions: ['Keep patient supine', 'Continuous chest compressions at 110 bpm', 'Aspirin 300mg chewable administered'],
+      detectedLanguage: 'en',
+      patientConditionSummary: 'ROSC achieved post 2nd shock. Transferred to Apollo Jubilee Hills Cath Lab.'
+    },
+    goodSamaritansAlerted: 2,
+    timeline: [
+      { status: 'Reported', timestamp: Date.now() - 86400000, note: 'Emergency Call received via LifeLine Citizen SOS', actor: 'Citizen Ramesh' },
+      { status: 'Verified', timestamp: Date.now() - 86386000, note: 'AI Cardiac Protocol engaged (Confidence: 99%)', actor: 'Gemini AI' },
+      { status: 'Assigned', timestamp: Date.now() - 86372000, note: 'Dispatched 108-HYD-ALS-01 (Score: 98/100)', actor: 'Smart Dispatch' },
+      { status: 'En Route', timestamp: Date.now() - 86327000, note: 'Ambulance en route. Traffic Green Corridor engaged.', actor: 'Paramedic Ravi' },
+      { status: 'Arrived', timestamp: Date.now() - 86148000, note: 'ALS unit on scene. Total response time: 4m 12s.', actor: 'Paramedic Ravi' },
+      { status: 'Hospitalizing', timestamp: Date.now() - 85728000, note: 'Handed over to Apollo Emergency Cath Lab ICU bed 04.', actor: 'Apollo ER Desk' },
+      { status: 'Resolved', timestamp: Date.now() - 84420000, note: 'Successful angioplasty stent placed. Case stabilized.', actor: 'Dr. Priya Varma (Apollo)' }
+    ],
+    chatMessages: [],
+    escalationTier: 0,
+    sha256Hash: '9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08',
+    milestoneMetrics: {
+      callInitiatedTime: Date.now() - 86400000,
+      triageDurationSeconds: 14,
+      dispatchLatencySeconds: 28,
+      wheelRollDurationSeconds: 45,
+      onSceneArrivalSeconds: 252, // 4m 12s
+      handoverDurationSeconds: 420,
+      totalResolutionSeconds: 1980,
+      slaTargetSeconds: 480, // 8 mins
+      isSlaMet: true,
+      sha256Checksum: '9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08'
+    }
+  },
+  {
+    id: 'INC-2026-HYD-036',
+    type: 'Accident',
+    severity: 'Critical',
+    status: 'Resolved',
+    citizenName: 'Deepak Reddy',
+    citizenPhone: '+91 94400 •••••',
+    description: 'Multi-vehicle pileup on Outer Ring Road Exit 19. Two passengers extricated with hydraulic cutters.',
+    location: {
+      lat: 17.4190,
+      lng: 78.3480,
+      address: 'Outer Ring Road Exit 19, Nanakramguda Financial District, Hyderabad',
+      area: 'Financial District',
+      accuracyMeters: 5
+    },
+    timestamp: Date.now() - 172800000, // 48 hours ago
+    assignedResponderId: 'RES-ALS-03',
+    assignedHospitalId: 'HOSP-AIG-03',
+    etaSeconds: 0,
+    aiTriage: {
+      emergencyType: 'Accident',
+      severity: 'Critical',
+      confidence: 97,
+      recommendedResponder: 'ALS Ambulance & Heavy Rescue Fire Tender',
+      firstAidInstructions: ['Immobilize cervical spine', 'Control femoral arterial bleeding', 'Oxygen via non-rebreather'],
+      detectedLanguage: 'en',
+      patientConditionSummary: 'Blunt thoracic trauma and compound tibia fracture. Extricated in 6 mins.'
+    },
+    goodSamaritansAlerted: 4,
+    timeline: [
+      { status: 'Reported', timestamp: Date.now() - 172800000, note: 'Crash alert received via automated vehicle crash sensor', actor: 'Vehicle Telematics' },
+      { status: 'Verified', timestamp: Date.now() - 172785000, note: 'Dual triage: Critical Trauma & Structural Entrapment', actor: 'Gemini AI' },
+      { status: 'Assigned', timestamp: Date.now() - 172765000, note: 'Dispatched ALS Ambulance 03 and Fire Tender 01', actor: 'Smart Dispatch' },
+      { status: 'En Route', timestamp: Date.now() - 172710000, note: 'Both units rolling. Cyberabad Traffic Green Corridor pre-empted.', actor: 'Dispatch Officer' },
+      { status: 'Arrived', timestamp: Date.now() - 172470000, note: 'Scene arrival in 5m 30s. Rapid extrication initiated.', actor: 'Captain Srinivas (Fire)' },
+      { status: 'Hospitalizing', timestamp: Date.now() - 171900000, note: 'Admitted to AIG Hospitals Level-1 Trauma Resuscitation Bay.', actor: 'AIG Trauma Lead' },
+      { status: 'Resolved', timestamp: Date.now() - 170400000, note: 'Both patients stabilized in ICU post emergency orthopaedic fixation.', actor: 'Dr. Anand Reddy (AIG)' }
+    ],
+    chatMessages: [],
+    escalationTier: 0,
+    sha256Hash: 'b4c738e4a9e2d312f5a019e8c45998a4d7b1a23c5e89d14f2e7b8c9d0a1b2c3d',
+    milestoneMetrics: {
+      callInitiatedTime: Date.now() - 172800000,
+      triageDurationSeconds: 15,
+      dispatchLatencySeconds: 35,
+      wheelRollDurationSeconds: 55,
+      onSceneArrivalSeconds: 330, // 5m 30s
+      handoverDurationSeconds: 570,
+      totalResolutionSeconds: 2400,
+      slaTargetSeconds: 480,
+      isSlaMet: true,
+      sha256Checksum: 'b4c738e4a9e2d312f5a019e8c45998a4d7b1a23c5e89d14f2e7b8c9d0a1b2c3d'
+    }
+  },
+  {
+    id: 'INC-2026-HYD-037',
+    type: 'Fire',
+    severity: 'High',
+    status: 'Resolved',
+    citizenName: 'Mallesh Goud',
+    citizenPhone: '+91 99890 •••••',
+    description: 'Commercial kitchen exhaust fire at Inorbit Mall food court. 350 patrons evacuated safely.',
+    location: {
+      lat: 17.4338,
+      lng: 78.3860,
+      address: 'Inorbit Mall Food Court 3rd Floor, Madhapur, Hyderabad',
+      area: 'Madhapur',
+      accuracyMeters: 8
+    },
+    timestamp: Date.now() - 259200000, // 3 days ago
+    assignedResponderId: 'RES-FIRE-02',
+    etaSeconds: 0,
+    aiTriage: {
+      emergencyType: 'Fire',
+      severity: 'High',
+      confidence: 95,
+      recommendedResponder: 'Fire Tender 02 & Foam Snorkel Unit',
+      firstAidInstructions: ['Full zone evacuation', 'Activate building fire suppression sprinklers', 'Shut gas pipeline valves'],
+      detectedLanguage: 'en',
+      patientConditionSummary: 'Flames contained within duct. Zero fatalities. 3 minor smoke inhalations treated on-site.'
+    },
+    goodSamaritansAlerted: 0,
+    timeline: [
+      { status: 'Reported', timestamp: Date.now() - 259200000, note: 'Fire alarm automated telemetry alert', actor: 'Inorbit BMS' },
+      { status: 'Verified', timestamp: Date.now() - 259188000, note: 'High category commercial duct fire confirmed', actor: 'Fire Control Desk' },
+      { status: 'Assigned', timestamp: Date.now() - 259170000, note: 'Madhapur Station Tender 02 dispatched', actor: 'Command Center' },
+      { status: 'En Route', timestamp: Date.now() - 259110000, note: 'Rolling with dual high-pressure hoses', actor: 'Station Officer' },
+      { status: 'Arrived', timestamp: Date.now() - 258825000, note: 'On scene in 6m 15s. Dry powder and CO2 deployed.', actor: 'Station Officer' },
+      { status: 'Resolved', timestamp: Date.now() - 257400000, note: 'Fire completely extinguished and cooling operations verified.', actor: 'Chief Fire Inspector' }
+    ],
+    chatMessages: [],
+    escalationTier: 0,
+    sha256Hash: 'c7a82910e4b8d721f0a91e8c45998a4d7b1a23c5e89d14f2e7b8c9d0a1b2c4e',
+    milestoneMetrics: {
+      callInitiatedTime: Date.now() - 259200000,
+      triageDurationSeconds: 12,
+      dispatchLatencySeconds: 30,
+      wheelRollDurationSeconds: 60,
+      onSceneArrivalSeconds: 375, // 6m 15s
+      totalResolutionSeconds: 1800,
+      slaTargetSeconds: 600, // 10 mins
+      isSlaMet: true,
+      sha256Checksum: 'c7a82910e4b8d721f0a91e8c45998a4d7b1a23c5e89d14f2e7b8c9d0a1b2c4e'
+    }
+  },
+  {
+    id: 'INC-2026-HYD-038',
+    type: 'Women Safety',
+    severity: 'High',
+    status: 'Resolved',
+    citizenName: 'Pooja Hegde',
+    citizenPhone: '+91 97010 •••••',
+    description: 'Lone commuter cornered by suspicious auto-rickshaw group near Raidurg Metro pillar 42.',
+    location: {
+      lat: 17.4390,
+      lng: 78.3780,
+      address: 'Pillar 42, Raidurg Metro Station Road, Madhapur, Hyderabad',
+      area: 'Madhapur',
+      accuracyMeters: 4
+    },
+    timestamp: Date.now() - 345600000, // 4 days ago
+    assignedResponderId: 'RES-POL-20',
+    etaSeconds: 0,
+    aiTriage: {
+      emergencyType: 'Women Safety',
+      severity: 'High',
+      confidence: 98,
+      recommendedResponder: 'Telangana Police SHE Team Rapid PCR',
+      firstAidInstructions: ['Move to nearest security desk', 'Keep live audio link active with police dispatch'],
+      detectedLanguage: 'en',
+      patientConditionSummary: 'Citizen safely protected. PCR intercept executed in under 4 minutes.'
+    },
+    goodSamaritansAlerted: 1,
+    timeline: [
+      { status: 'Reported', timestamp: Date.now() - 345600000, note: 'Discreet power-button trigger activated', actor: 'Citizen Pooja' },
+      { status: 'Verified', timestamp: Date.now() - 345590000, note: 'Verified by Police HawkEye Sentinel', actor: 'Police Sentinel' },
+      { status: 'Assigned', timestamp: Date.now() - 345575000, note: 'SHE Team PCR unit 20 dispatched', actor: 'Cyberabad Police Control' },
+      { status: 'En Route', timestamp: Date.now() - 345540000, note: 'En route with blue sirens and flashing beacons', actor: 'Officer Sujatha' },
+      { status: 'Arrived', timestamp: Date.now() - 345375000, note: 'Rapid intercept in 3m 45s. Suspects detained for interrogation.', actor: 'Officer Sujatha' },
+      { status: 'Resolved', timestamp: Date.now() - 344700000, note: 'Citizen securely escorted to destination. FIR registered.', actor: 'Inspector Rajesh' }
+    ],
+    chatMessages: [],
+    escalationTier: 0,
+    sha256Hash: 'd8b93021f5c9e832a1b02f9d56009b5e8c2b34d6f90e25a3f8c9d0e1b2c3d5f',
+    milestoneMetrics: {
+      callInitiatedTime: Date.now() - 345600000,
+      triageDurationSeconds: 10,
+      dispatchLatencySeconds: 25,
+      wheelRollDurationSeconds: 35,
+      onSceneArrivalSeconds: 225, // 3m 45s
+      totalResolutionSeconds: 900,
+      slaTargetSeconds: 300, // 5 mins
+      isSlaMet: true,
+      sha256Checksum: 'd8b93021f5c9e832a1b02f9d56009b5e8c2b34d6f90e25a3f8c9d0e1b2c3d5f'
+    }
+  },
+  {
+    id: 'INC-2026-HYD-039',
+    type: 'Medical',
+    severity: 'Critical',
+    status: 'Resolved',
+    citizenName: 'Fatima Begum',
+    citizenPhone: '+91 93910 •••••',
+    description: 'Paediatric respiratory failure in 6-year-old child with severe bronchospasm and cyanosis.',
+    location: {
+      lat: 17.4370,
+      lng: 78.4480,
+      address: 'Flat 302, Ameerpet Metro Junction, Hyderabad',
+      area: 'Ameerpet',
+      accuracyMeters: 6
+    },
+    timestamp: Date.now() - 432000000, // 5 days ago
+    assignedResponderId: 'RES-ALS-04',
+    assignedHospitalId: 'HOSP-NIMS-01',
+    etaSeconds: 0,
+    aiTriage: {
+      emergencyType: 'Medical',
+      severity: 'Critical',
+      confidence: 99,
+      recommendedResponder: 'ALS Ambulance with Paediatric Bag & Mask',
+      firstAidInstructions: ['Keep child upright and calm', 'Administer prescribed Salbutamol nebulizer if available', 'Do not force liquids'],
+      detectedLanguage: 'en',
+      patientConditionSummary: 'Severe hypoxia. Nebulized and oxygenated. Admitted to NIMS Paediatric ICU.'
+    },
+    goodSamaritansAlerted: 1,
+    timeline: [
+      { status: 'Reported', timestamp: Date.now() - 432000000, note: 'Citizen emergency distress call', actor: 'Citizen Fatima' },
+      { status: 'Verified', timestamp: Date.now() - 431988000, note: 'AI Paediatric Respiratory Protocol engaged', actor: 'Gemini AI' },
+      { status: 'Assigned', timestamp: Date.now() - 431970000, note: 'NIMS Paediatric ALS unit dispatched', actor: 'Smart Dispatch' },
+      { status: 'En Route', timestamp: Date.now() - 431920000, note: 'Traffic Green Corridor pre-empted Ameerpet signal', actor: 'Traffic Police' },
+      { status: 'Arrived', timestamp: Date.now() - 431712000, note: 'On scene in 4m 48s. High-flow oxygen and nebulization given.', actor: 'Paramedic Anand' },
+      { status: 'Hospitalizing', timestamp: Date.now() - 431200000, note: 'Child admitted to NIMS PICU Bed 02. Oxygen saturation 98%.', actor: 'Dr. Srinivas (NIMS)' },
+      { status: 'Resolved', timestamp: Date.now() - 429800000, note: 'Bronchospasm resolved. Patient discharged home safely.', actor: 'NIMS Paediatric Head' }
+    ],
+    chatMessages: [],
+    escalationTier: 0,
+    sha256Hash: 'e9c04132a6d0f943b2c13a0e67110c6f9d3c45e7a01f36b4a9d0e1f2c3d4e6a',
+    milestoneMetrics: {
+      callInitiatedTime: Date.now() - 432000000,
+      triageDurationSeconds: 12,
+      dispatchLatencySeconds: 30,
+      wheelRollDurationSeconds: 50,
+      onSceneArrivalSeconds: 288, // 4m 48s
+      handoverDurationSeconds: 512,
+      totalResolutionSeconds: 2200,
+      slaTargetSeconds: 480,
+      isSlaMet: true,
+      sha256Checksum: 'e9c04132a6d0f943b2c13a0e67110c6f9d3c45e7a01f36b4a9d0e1f2c3d4e6a'
+    }
+  },
+  {
+    id: 'INC-2026-HYD-040',
+    type: 'Accident',
+    severity: 'Moderate',
+    status: 'Resolved',
+    citizenName: 'Sanjay Verma',
+    citizenPhone: '+91 98200 •••••',
+    description: 'Motorcycle skid near Botanical Garden. Minor head concussion and elbow laceration.',
+    location: {
+      lat: 17.4580,
+      lng: 78.3620,
+      address: 'Near Botanical Garden Gate 2, Kondapur, Hyderabad',
+      area: 'Kondapur',
+      accuracyMeters: 7
+    },
+    timestamp: Date.now() - 518400000, // 6 days ago
+    assignedResponderId: 'RES-BLS-01',
+    assignedHospitalId: 'HOSP-CARE-04',
+    etaSeconds: 0,
+    aiTriage: {
+      emergencyType: 'Accident',
+      severity: 'Moderate',
+      confidence: 94,
+      recommendedResponder: 'BLS Ambulance with Trauma Splints',
+      firstAidInstructions: ['Clean wound with saline', 'Apply pressure bandage', 'Do not remove rider helmet forcefully'],
+      detectedLanguage: 'en',
+      patientConditionSummary: 'GCS 14/15. Wound dressed. X-ray cleared at CARE Hospital.'
+    },
+    goodSamaritansAlerted: 1,
+    timeline: [
+      { status: 'Reported', timestamp: Date.now() - 518400000, note: 'Reported by passerby', actor: 'Citizen Sanjay' },
+      { status: 'Verified', timestamp: Date.now() - 518385000, note: 'Moderate trauma verified', actor: 'Gemini AI' },
+      { status: 'Assigned', timestamp: Date.now() - 518365000, note: 'BLS Ambulance dispatched', actor: 'Smart Dispatch' },
+      { status: 'En Route', timestamp: Date.now() - 518310000, note: 'En route via Botanical Garden road', actor: 'Paramedic' },
+      { status: 'Arrived', timestamp: Date.now() - 518090000, note: 'Arrival in 5m 10s. First aid dressing completed.', actor: 'Paramedic' },
+      { status: 'Hospitalizing', timestamp: Date.now() - 517600000, note: 'Transferred to CARE Banjara for preventive skull X-ray.', actor: 'ER Desk' },
+      { status: 'Resolved', timestamp: Date.now() - 516400000, note: 'Discharged after observation. No fracture found.', actor: 'Dr. CARE Hospital' }
+    ],
+    chatMessages: [],
+    escalationTier: 0,
+    sha256Hash: 'fa015243b7e1a054c3d24b1f78221d7a0e4d56f8b12a47c5b0e1f2a3d4e5f7b',
+    milestoneMetrics: {
+      callInitiatedTime: Date.now() - 518400000,
+      triageDurationSeconds: 15,
+      dispatchLatencySeconds: 35,
+      wheelRollDurationSeconds: 55,
+      onSceneArrivalSeconds: 310, // 5m 10s
+      handoverDurationSeconds: 490,
+      totalResolutionSeconds: 2000,
+      slaTargetSeconds: 600,
+      isSlaMet: true,
+      sha256Checksum: 'fa015243b7e1a054c3d24b1f78221d7a0e4d56f8b12a47c5b0e1f2a3d4e5f7b'
+    }
   }
 ];
 

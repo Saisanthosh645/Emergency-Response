@@ -11,7 +11,8 @@ import {
   ShieldCheck, 
   Globe, 
   Wifi, 
-  WifiOff 
+  WifiOff,
+  LogOut
 } from 'lucide-react';
 
 export const Navbar: React.FC<{ onShowLanding: () => void; isLanding: boolean }> = ({ onShowLanding, isLanding }) => {
@@ -20,6 +21,8 @@ export const Navbar: React.FC<{ onShowLanding: () => void; isLanding: boolean }>
     setActiveRole, 
     currentLanguage, 
     setLanguage, 
+    isTemporarilyLoggedOut,
+    setTemporarilyLoggedOut,
     isOfflineMode, 
     setIsOfflineMode,
     incidents 
@@ -138,7 +141,7 @@ export const Navbar: React.FC<{ onShowLanding: () => void; isLanding: boolean }>
         {/* Multilingual Selector */}
         <div className="flex items-center bg-slate-900 border border-slate-800 rounded-lg p-0.5 text-xs">
           <Globe className="w-3 h-3 text-slate-400 ml-1.5 mr-1" />
-          {(['en', 'hi', 'te'] as Language[]).map(lang => (
+          {(['en', 'hi', 'te', 'mr'] as Language[]).map(lang => (
             <button
               key={lang}
               onClick={() => setLanguage(lang)}
@@ -148,13 +151,25 @@ export const Navbar: React.FC<{ onShowLanding: () => void; isLanding: boolean }>
                   : 'text-slate-400 hover:text-white'
               }`}
             >
-              {lang === 'en' ? 'EN' : lang === 'hi' ? 'हिन्दी' : 'తెలుగు'}
+              {lang === 'en' ? 'EN' : lang === 'hi' ? 'हिन्दी' : lang === 'te' ? 'తెలుగు' : 'मराठी'}
             </button>
           ))}
         </div>
 
         {/* In-App PWA Install */}
         <PWAInstallButton />
+
+        {/* Temporary Logout Button */}
+        <button
+          onClick={() => {
+            setTemporarilyLoggedOut(true);
+          }}
+          title="Temporarily Log Out"
+          className="flex items-center gap-1 px-2 py-1 rounded-lg bg-rose-950/80 hover:bg-rose-900 border border-rose-800 text-rose-300 hover:text-white text-xs font-semibold transition"
+        >
+          <LogOut className="w-3.5 h-3.5" />
+          <span className="hidden lg:inline">Logout</span>
+        </button>
       </div>
     </nav>
   );

@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useEmergency } from '../../context/EmergencyContext';
 import { EmergencyMap } from '../map/EmergencyMap';
-import { Incident, Responder, Hospital, AreaAlert } from '../../types';
+import { TRANSLATIONS } from '../../utils/i18n';
+import { Incident, Responder, Hospital, AreaAlert, IncidentStatus } from '../../types';
 import { sound } from '../../utils/audio';
 import { 
   Activity, 
@@ -28,7 +29,18 @@ import {
   Search,
   ChevronRight,
   TrendingUp,
-  AlertCircle
+  AlertCircle,
+  Navigation,
+  Zap,
+  Ambulance,
+  Phone,
+  Check,
+  Plus,
+  AlertOctagon,
+  Bell,
+  ExternalLink,
+  X,
+  ArrowLeft
 } from 'lucide-react';
 
 export const AdminDashboard: React.FC = () => {
@@ -41,18 +53,51 @@ export const AdminDashboard: React.FC = () => {
     smartDispatch, 
     updateIncidentStatus, 
     broadcastAreaAlert,
+    revokeAreaAlert,
     escalateIncident,
+    assignCoordinatingResponder,
+    reassignResponder,
+    toggleGreenCorridor,
+    sendEmergencySmsBroadcast,
     isCitySimulationRunning,
     toggleCitySimulation,
-    resetToDemo 
+    resetToDemo,
+    setActiveRole,
+    currentLanguage
   } = useEmergency();
 
-  // Selected State
+  const t = TRANSLATIONS[currentLanguage] || TRANSLATIONS.en;
+
+  // Selected State & Dynamic Derivation
   const [selectedIncident, setSelectedIncident] = useState<Incident | null>(incidents[0] || null);
+  const currentIncident = useMemo(() => {
+    return incidents.find(i => i.id === selectedIncident?.id) || selectedIncident || incidents[0] || null;
+  }, [incidents, selectedIncident]);
+
   const [selectedResponder, setSelectedResponder] = useState<Responder | null>(null);
   const [showHeatmap, setShowHeatmap] = useState<boolean>(false);
   const [incidentFilter, setIncidentFilter] = useState<string>('all');
+  const [severityFilter, setSeverityFilter] = useState<string>('all');
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [paneView, setPaneView] = useState<'queue' | 'detail'>('queue');
   const [activeTab, setActiveTab] = useState<'map' | 'dispatch' | 'alerts' | 'analytics' | 'fraud' | 'samaritans' | 'audit'>('map');
+
+  // Secondary Backup Modal State
+  const [showBackupModal, setShowBackupModal] = useState<boolean>(false);
+  const [backupRole, setBackupRole] = useState<string>('Police PCR Escort');
+  const [selectedBackupUnitId, setSelectedBackupUnitId] = useState<string>('');
+
+  // Primary Unit Reassignment Modal State
+  const [showReassignModal, setShowReassignModal] = useState<boolean>(false);
+  const [selectedReassignUnitId, setSelectedReassignUnitId] = useState<string>('');
+
+  // SLA Escalation Modal State
+  const [showEscalateModal, setShowEscalateModal] = useState<boolean>(false);
+  const [escalateTier, setEscalateTier] = useState<number>(1);
+  const [escalateReason, setEscalateReason] = useState<string>('Operational perimeter expansion requested by Command');
+
+  // SMS Sent Toast Feedback
+  const [smsToast, setSmsToast] = useState<{ message: string; show: boolean } | null>(null);
 
   // Smart Dispatch Modal
   const [showDispatchModal, setShowDispatchModal] = useState<boolean>(false);
@@ -180,12 +225,48 @@ export const AdminDashboard: React.FC = () => {
     document.body.removeChild(link);
   };
 
+  // Live Incident Queue Filter Logic
+  const filteredIncidents = useMemo(() => {
+    return incidents.filter(inc => {
+      // Search Query
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        const matchesId = inc.id.toLowerCase().includes(q);
+        const matchesAddr = inc.location.address.toLowerCase().includes(q) || inc.location.area.toLowerCase().includes(q);
+        const matchesCaller = (inc.citizenName || '').toLowerCase().includes(q) || (inc.citizenPhone || '').includes(q);
+        const matchesUnit = (inc.assignedResponder?.name || '').toLowerCase().includes(q) || (inc.assignedResponder?.callSign || '').toLowerCase().includes(q);
+        const matchesType = inc.type.toLowerCase().includes(q);
+        if (!matchesId && !matchesAddr && !matchesCaller && !matchesUnit && !matchesType) return false;
+      }
+
+      // Status Filter
+      if (incidentFilter === 'active' && inc.status === 'Resolved') return false;
+      if (incidentFilter === 'pending' && inc.status !== 'Reported' && inc.status !== 'Verified') return false;
+      if (incidentFilter === 'enroute' && inc.status !== 'En Route') return false;
+      if (incidentFilter === 'arrived' && inc.status !== 'Arrived' && inc.status !== 'Hospitalizing') return false;
+      if (incidentFilter === 'resolved' && inc.status !== 'Resolved') return false;
+
+      // Severity Filter
+      if (severityFilter !== 'all' && inc.severity !== severityFilter) return false;
+
+      return true;
+    });
+  }, [incidents, searchQuery, incidentFilter, severityFilter]);
+
   return (
-    <div className="w-full min-h-screen bg-[#060911] text-slate-100 flex flex-col font-sans select-none">
+    <div className="w-full h-full bg-[#060911] text-slate-100 flex flex-col font-sans select-none overflow-hidden">
       
       {/* Top Header HUD */}
-      <header className="h-14 border-b border-slate-800 bg-[#090d16] px-4 flex items-center justify-between z-20">
+      <header className="h-14 border-b border-slate-800 bg-[#090d16] px-4 flex items-center justify-between z-20 shrink-0">
         <div className="flex items-center gap-3">
+          {/* Back Button */}
+          <button
+            onClick={() => setActiveRole('citizen')}
+            className="flex items-center gap-1.5 text-xs font-semibold text-slate-400 hover:text-white transition pr-3 border-r border-slate-800"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
+            <span>{t.back}</span>
+          </button>
           <div className="flex items-center gap-2">
             <span className="w-3 h-3 rounded-full bg-red-500 animate-pulse shadow-lg shadow-red-500/50" />
             <h1 className="text-sm font-extrabold tracking-wider text-white uppercase font-mono">
@@ -228,7 +309,7 @@ export const AdminDashboard: React.FC = () => {
             title="Export CSV Log"
           >
             <Download className="w-3.5 h-3.5" />
-            <span>CSV</span>
+            <span>{t.exportCSV}</span>
           </button>
 
           {/* Reset Demo */}
@@ -245,15 +326,15 @@ export const AdminDashboard: React.FC = () => {
       {/* KPI Ticker Ribbon */}
       <div className="bg-[#0b101c] border-b border-slate-800/80 px-4 py-2 grid grid-cols-2 sm:grid-cols-6 gap-2 text-xs font-mono">
         <div className="flex items-center gap-2">
-          <span className="text-slate-400 uppercase text-[10px]">Active Cases:</span>
+          <span className="text-slate-400 uppercase text-[10px]">{t.filterActive}:</span>
           <span className="font-bold text-red-400 text-sm">{activeCount}</span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-slate-400 uppercase text-[10px]">Critical SLA:</span>
+          <span className="text-slate-400 uppercase text-[10px]">{t.critical}:</span>
           <span className="font-bold text-amber-400 text-sm">{criticalCount}</span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-slate-400 uppercase text-[10px]">Avg Latency:</span>
+          <span className="text-slate-400 uppercase text-[10px]">{t.avgResponseLatency}:</span>
           <span className="font-bold text-cyan-400 text-sm">42 sec</span>
         </div>
         <div className="flex items-center gap-2">
@@ -307,160 +388,563 @@ export const AdminDashboard: React.FC = () => {
         {activeTab === 'map' && (
           <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
             
-            {/* Left Column: Active Incidents Table & Priority Queue */}
-            <div className="w-full lg:w-[460px] border-r border-slate-800 flex flex-col bg-[#080c14] overflow-hidden">
+            {/* Left Column: Active Incidents Queue & Command Dossier */}
+            <div className="w-full lg:w-[480px] border-r border-slate-800 flex flex-col bg-[#080c14] overflow-hidden">
               
-              {/* Filter Bar */}
-              <div className="p-3 border-b border-slate-800 flex items-center justify-between text-xs">
-                <span className="font-bold text-slate-300 uppercase tracking-wider font-mono">
-                  Live Incident Queue ({incidents.length})
-                </span>
-                <div className="flex gap-1">
-                  {['all', 'critical', 'active'].map(f => (
-                    <button
-                      key={f}
-                      onClick={() => setIncidentFilter(f)}
-                      className={`px-2 py-0.5 rounded text-[10px] uppercase font-mono transition ${
-                        incidentFilter === f 
-                          ? 'bg-red-600 text-white' 
-                          : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
-                      }`}
-                    >
-                      {f}
-                    </button>
-                  ))}
+              {/* Top View Switcher Header */}
+              <div className="p-3 border-b border-slate-800 flex items-center justify-between text-xs bg-[#090d16] shrink-0">
+                <div className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse shadow-sm shadow-red-500/50" />
+                  <span className="font-bold text-slate-200 uppercase tracking-wider font-mono text-[11px]">
+                    Incident Command
+                  </span>
+                </div>
+                <div className="flex bg-slate-900 p-0.5 rounded-lg border border-slate-800 text-[10px] font-mono">
+                  <button
+                    onClick={() => setPaneView('queue')}
+                    className={`px-3 py-1 rounded transition ${
+                      paneView === 'queue' ? 'bg-red-600 text-white font-bold shadow' : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    Queue ({filteredIncidents.length})
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (currentIncident) setPaneView('detail');
+                    }}
+                    className={`px-3 py-1 rounded transition ${
+                      paneView === 'detail' ? 'bg-cyan-600 text-white font-bold shadow' : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    Inspect {currentIncident ? `(${currentIncident.id.slice(-4)})` : ''}
+                  </button>
                 </div>
               </div>
 
-              {/* Incidents Scrollable List */}
-              <div className="flex-1 overflow-y-auto divide-y divide-slate-800/60">
-                {incidents
-                  .filter(inc => {
-                    if (incidentFilter === 'critical') return inc.severity === 'Critical';
-                    if (incidentFilter === 'active') return inc.status !== 'Resolved';
-                    return true;
-                  })
-                  .map(inc => {
-                    const isSelected = selectedIncident?.id === inc.id;
-                    const elapsedSec = Math.floor((Date.now() - inc.timestamp) / 1000);
-                    return (
-                      <div
-                        key={inc.id}
-                        onClick={() => setSelectedIncident(inc)}
-                        className={`p-3 cursor-pointer transition border-l-4 ${
-                          isSelected
-                            ? 'bg-slate-800/80 border-l-red-500'
-                            : inc.severity === 'Critical'
-                            ? 'hover:bg-slate-900/60 border-l-red-600/70 bg-red-950/10'
-                            : 'hover:bg-slate-900/60 border-l-transparent'
-                        }`}
-                      >
-                        <div className="flex items-center justify-between mb-1">
-                          <div className="flex items-center gap-1.5">
-                            <span className={`w-2 h-2 rounded-full ${
-                              inc.severity === 'Critical' ? 'bg-red-500 animate-ping' : 'bg-amber-400'
-                            }`} />
-                            <span className="font-mono text-xs font-bold text-white">{inc.id}</span>
-                            <span className="text-[10px] text-slate-400 font-mono">({elapsedSec}s ago)</span>
-                          </div>
-                          <span className={`text-[9px] font-bold px-1.5 py-0.2 rounded uppercase border ${
-                            inc.status === 'Resolved' 
-                              ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' 
-                              : inc.status === 'En Route'
-                              ? 'bg-amber-500/20 text-amber-300 border-amber-500/30'
-                              : 'bg-red-500/20 text-red-300 border-red-500/30'
-                          }`}>
-                            {inc.status}
-                          </span>
-                        </div>
+              {/* VIEW 1: QUEUE LIST */}
+              {paneView === 'queue' && (
+                <div className="flex-1 flex flex-col overflow-hidden">
+                  {/* Search & Multi-Attribute Filter Bar */}
+                  <div className="p-2.5 border-b border-slate-800/80 space-y-2 bg-[#090d18] shrink-0">
+                    {/* Search Input */}
+                    <div className="relative">
+                      <Search className="w-3.5 h-3.5 text-slate-500 absolute left-2.5 top-2.5" />
+                      <input
+                        type="text"
+                        value={searchQuery}
+                        onChange={e => setSearchQuery(e.target.value)}
+                        placeholder="Search ID, Area, Caller, Callsign..."
+                        className="w-full bg-slate-950 border border-slate-800 rounded-lg pl-8 pr-7 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-red-500"
+                      />
+                      {searchQuery && (
+                        <button 
+                          onClick={() => setSearchQuery('')}
+                          className="absolute right-2 top-2 text-slate-500 hover:text-white text-xs"
+                        >
+                          ✕
+                        </button>
+                      )}
+                    </div>
 
-                        <div className="text-xs font-bold text-slate-200 mb-0.5">
-                          {inc.severity} {inc.type}: {inc.location.area}
-                        </div>
-                        <p className="text-[11px] text-slate-400 line-clamp-1 mb-2">
-                          {inc.description}
-                        </p>
+                    {/* Status Filter Chips */}
+                    <div className="flex gap-1 overflow-x-auto pb-1 text-[10px] font-mono">
+                      {[
+                        { id: 'all', label: 'All' },
+                        { id: 'active', label: 'Active' },
+                        { id: 'pending', label: 'Pending' },
+                        { id: 'enroute', label: 'En Route' },
+                        { id: 'arrived', label: 'Arrived' },
+                        { id: 'resolved', label: 'Resolved' },
+                      ].map(f => (
+                        <button
+                          key={f.id}
+                          onClick={() => setIncidentFilter(f.id)}
+                          className={`px-2 py-0.5 rounded transition shrink-0 ${
+                            incidentFilter === f.id
+                              ? 'bg-red-600 text-white font-bold shadow'
+                              : 'bg-slate-900 text-slate-400 hover:bg-slate-800'
+                          }`}
+                        >
+                          {f.label}
+                        </button>
+                      ))}
+                    </div>
 
-                        <div className="flex items-center justify-between text-[10px] text-slate-400 font-mono">
-                          <span>Unit: {inc.assignedResponder?.callSign || 'Unassigned'}</span>
-                          {inc.status === 'Reported' || inc.status === 'Verified' ? (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setDispatchIncident(inc);
-                                setShowDispatchModal(true);
-                              }}
-                              className="px-2 py-0.5 bg-red-600 hover:bg-red-500 text-white rounded font-bold"
-                            >
-                              Dispatch Now
-                            </button>
-                          ) : (
-                            <span className="text-cyan-400">ETA: {inc.etaSeconds ? `${Math.round(inc.etaSeconds / 60)}m` : '0m'}</span>
-                          )}
-                        </div>
+                    {/* Severity Filter Chips */}
+                    <div className="flex gap-1 items-center text-[10px] font-mono">
+                      <span className="text-slate-500 mr-1 text-[9px] uppercase">Sev:</span>
+                      {['all', 'Critical', 'High', 'Moderate', 'Low'].map(s => (
+                        <button
+                          key={s}
+                          onClick={() => setSeverityFilter(s)}
+                          className={`px-1.5 py-0.5 rounded transition ${
+                            severityFilter === s
+                              ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold'
+                              : 'text-slate-500 hover:text-slate-300'
+                          }`}
+                        >
+                          {s}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
 
-                        {/* Live SLA Response Tracker */}
-                        <div className="flex items-center justify-between text-[9px] font-mono mt-1.5 pt-1 border-t border-slate-800/40">
-                          <span className="text-slate-500">Dispatch SLA:</span>
-                          <div className="flex items-center gap-1.5">
-                            <span className={elapsedSec > 60 ? 'text-red-400 font-bold animate-pulse' : 'text-emerald-400'}>
-                              {elapsedSec}s elapsed / 60s target
-                            </span>
-                            {inc.escalationTier > 0 && (
-                              <span className="bg-red-950 text-red-300 px-1 rounded border border-red-800/80">
-                                Tier {inc.escalationTier} Esc
+                  {/* Incident Queue Scrollable List */}
+                  <div className="flex-1 overflow-y-auto divide-y divide-slate-800/60">
+                    {filteredIncidents.length === 0 ? (
+                      <div className="p-8 text-center text-slate-500 text-xs font-mono">
+                        No incidents match current filters.
+                      </div>
+                    ) : (
+                      filteredIncidents.map(inc => {
+                        const isSelected = currentIncident?.id === inc.id;
+                        const elapsedSec = Math.floor((Date.now() - inc.timestamp) / 1000);
+                        const isSlaBreached = elapsedSec > 60 && inc.status !== 'Resolved';
+                        const isSlaWarning = elapsedSec > 45 && elapsedSec <= 60 && inc.status !== 'Resolved';
+
+                        return (
+                          <div
+                            key={inc.id}
+                            onClick={() => {
+                              setSelectedIncident(inc);
+                              setPaneView('detail');
+                            }}
+                            className={`p-3 cursor-pointer transition border-l-4 ${
+                              isSelected
+                                ? 'bg-slate-800/90 border-l-cyan-400 shadow-inner'
+                                : inc.severity === 'Critical'
+                                ? 'hover:bg-slate-900/70 border-l-red-600/80 bg-red-950/10'
+                                : 'hover:bg-slate-900/60 border-l-transparent'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between mb-1">
+                              <div className="flex items-center gap-1.5">
+                                <span className={`w-2 h-2 rounded-full ${
+                                  inc.severity === 'Critical' ? 'bg-red-500 animate-ping' : 'bg-amber-400'
+                                }`} />
+                                <span className="font-mono text-xs font-bold text-white">{inc.id}</span>
+                                <span className="text-[10px] text-slate-400 font-mono">
+                                  ({new Date(inc.timestamp).toLocaleTimeString()})
+                                </span>
+                              </div>
+                              <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded uppercase border ${
+                                inc.status === 'Resolved' 
+                                  ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' 
+                                  : inc.status === 'En Route'
+                                  ? 'bg-amber-500/20 text-amber-300 border-amber-500/30'
+                                  : inc.status === 'Arrived' || inc.status === 'Hospitalizing'
+                                  ? 'bg-blue-500/20 text-blue-300 border-blue-500/30'
+                                  : 'bg-red-500/20 text-red-300 border-red-500/30 animate-pulse'
+                              }`}>
+                                {inc.status}
                               </span>
-                            )}
+                            </div>
+
+                            <div className="text-xs font-bold text-slate-200 mb-0.5 flex items-center gap-1.5">
+                              {inc.type === 'Medical' && <HeartPulse className="w-3.5 h-3.5 text-red-400" />}
+                              {inc.type === 'Fire' && <Flame className="w-3.5 h-3.5 text-orange-400" />}
+                              {inc.type === 'Accident' && <Car className="w-3.5 h-3.5 text-amber-400" />}
+                              {inc.type === 'Crime' && <ShieldAlert className="w-3.5 h-3.5 text-indigo-400" />}
+                              <span>{inc.severity} {inc.type}: {inc.location.area}</span>
+                            </div>
+
+                            <p className="text-[11px] text-slate-400 line-clamp-1 mb-2">
+                              {inc.location.address}
+                            </p>
+
+                            {/* Telemetry Row: Badges & Responder info */}
+                            <div className="flex items-center justify-between text-[10px] font-mono text-slate-400 mb-2">
+                              <span>Unit: {inc.assignedResponder?.callSign || 'Unassigned'}</span>
+                              {inc.etaSeconds && inc.status !== 'Resolved' ? (
+                                <span className="text-cyan-400 font-bold">
+                                  ETA: {Math.round(inc.etaSeconds / 60)}m ({inc.etaSeconds}s)
+                                </span>
+                              ) : null}
+                            </div>
+
+                            {/* Tactical Badges Strip */}
+                            <div className="flex items-center gap-1.5 flex-wrap mb-2">
+                              {inc.greenCorridorActive && (
+                                <span className="bg-emerald-950 text-emerald-300 border border-emerald-500/40 px-1.5 py-0.5 rounded text-[9px] font-mono flex items-center gap-1">
+                                  <Zap className="w-2.5 h-2.5 text-emerald-400" /> Green Corridor
+                                </span>
+                              )}
+                              {inc.coordinatingResponders && inc.coordinatingResponders.length > 0 && (
+                                <span className="bg-blue-950 text-blue-300 border border-blue-500/40 px-1.5 py-0.5 rounded text-[9px] font-mono flex items-center gap-1">
+                                  <Users className="w-2.5 h-2.5 text-blue-400" /> +{inc.coordinatingResponders.length} Units
+                                </span>
+                              )}
+                              {inc.escalationTier > 0 && (
+                                <span className="bg-red-950 text-red-300 border border-red-500/40 px-1.5 py-0.5 rounded text-[9px] font-mono flex items-center gap-1">
+                                  <AlertTriangle className="w-2.5 h-2.5 text-red-400" /> Tier {inc.escalationTier} Esc
+                                </span>
+                              )}
+                            </div>
+
+                            {/* Live SLA Response Tracker Ribbon */}
+                            <div className="flex items-center justify-between text-[9px] font-mono pt-1.5 border-t border-slate-800/40">
+                              <span className="text-slate-500">Dispatch SLA:</span>
+                              <div className="flex items-center gap-2">
+                                <span className={`font-bold ${
+                                  isSlaBreached 
+                                    ? 'text-red-400 animate-pulse' 
+                                    : isSlaWarning 
+                                    ? 'text-amber-400' 
+                                    : 'text-emerald-400'
+                                }`}>
+                                  {elapsedSec}s elapsed / 60s Target
+                                </span>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setSelectedIncident(inc);
+                                    setPaneView('detail');
+                                  }}
+                                  className="px-2 py-0.5 bg-slate-800 hover:bg-cyan-900/60 text-cyan-300 rounded border border-slate-700 hover:border-cyan-500/50 transition font-bold"
+                                >
+                                  Inspect Command
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* VIEW 2: DEDICATED INCIDENT COMMAND DOSSIER */}
+              {paneView === 'detail' && currentIncident && (
+                <div className="flex-1 flex flex-col overflow-y-auto p-3.5 space-y-3.5 text-xs bg-[#080c14]">
+                  {/* Top Bar with Back to Queue Button */}
+                  <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+                    <button
+                      onClick={() => setPaneView('queue')}
+                      className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 transition font-mono text-[11px]"
+                    >
+                      <ArrowLeft className="w-3.5 h-3.5" />
+                      <span>Back to Queue</span>
+                    </button>
+                    <div className="flex items-center gap-1.5">
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase border ${
+                        currentIncident.severity === 'Critical' ? 'bg-red-500/20 text-red-300 border-red-500/40' : 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                      }`}>
+                        {currentIncident.severity}
+                      </span>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded uppercase bg-slate-800 text-cyan-300 border border-slate-700 font-mono">
+                        {currentIncident.type}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Incident Identity & SLA Status */}
+                  <div className="bg-slate-950 p-3 rounded-2xl border border-slate-800 space-y-2">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <div className="font-mono font-bold text-sm text-white flex items-center gap-2">
+                          <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
+                          <span>{currentIncident.id}</span>
+                        </div>
+                        <div className="text-[10px] text-slate-400 font-mono mt-0.5">
+                          Reported: {new Date(currentIncident.timestamp).toLocaleTimeString()}
+                        </div>
+                      </div>
+                      <div className="text-right font-mono">
+                        <div className="text-[9px] uppercase text-slate-500">Dispatch Latency</div>
+                        <div className="text-xs font-bold text-emerald-400">
+                          {Math.floor((Date.now() - currentIncident.timestamp) / 1000)}s / 60s SLA
+                        </div>
+                      </div>
+                    </div>
+                    <div className="text-xs text-slate-200 bg-slate-900/80 p-2.5 rounded-xl border border-slate-800">
+                      "{currentIncident.description}"
+                    </div>
+                  </div>
+
+                  {/* 6-Step Interactive Status Progression Stepper */}
+                  <div className="bg-slate-950 p-3 rounded-2xl border border-slate-800">
+                    <div className="flex justify-between items-center text-[10px] font-mono text-slate-400 mb-2">
+                      <span className="uppercase font-bold text-white">Status Progression (Interactive)</span>
+                      <span className="text-cyan-400 font-bold uppercase">{currentIncident.status}</span>
+                    </div>
+                    <div className="grid grid-cols-4 sm:grid-cols-7 gap-1">
+                      {(['Reported', 'Verified', 'Assigned', 'En Route', 'Arrived', 'Hospitalizing', 'Resolved'] as IncidentStatus[]).map((step, idx) => {
+                        const statusOrder = ['Reported', 'Verified', 'Assigned', 'En Route', 'Arrived', 'Hospitalizing', 'Resolved'];
+                        const currentIndex = statusOrder.indexOf(currentIncident.status);
+                        const stepIndex = statusOrder.indexOf(step);
+                        const isDone = stepIndex < currentIndex;
+                        const isCurrent = stepIndex === currentIndex;
+
+                        return (
+                          <button
+                            key={step}
+                            onClick={() => {
+                              updateIncidentStatus(currentIncident.id, step, `Advanced to ${step} by Command Operations`);
+                              sound.playSuccessBeep();
+                            }}
+                            className={`p-1.5 rounded-xl text-center transition flex flex-col items-center justify-center border text-[9px] font-mono ${
+                              isCurrent
+                                ? 'bg-cyan-600 text-white font-bold border-cyan-400 shadow-lg shadow-cyan-600/30'
+                                : isDone
+                                ? 'bg-emerald-950/60 text-emerald-300 border-emerald-600/40 hover:bg-emerald-900/60'
+                                : 'bg-slate-900 text-slate-400 border-slate-800 hover:bg-slate-800'
+                            }`}
+                          >
+                            <span>{isDone ? '✓' : idx + 1}</span>
+                            <span className="truncate w-full">{step}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Location & Direct Google Maps GPS Route */}
+                  <div className="bg-slate-950 p-3 rounded-2xl border border-slate-800 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="text-[10px] font-mono text-cyan-400 font-bold uppercase flex items-center gap-1.5">
+                        <MapPin className="w-3.5 h-3.5" />
+                        <span>Ground Location Coordinates</span>
+                      </div>
+                      <a
+                        href={`https://www.google.com/maps/dir/?api=1&destination=${currentIncident.location.lat},${currentIncident.location.lng}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="flex items-center gap-1 px-2.5 py-1 bg-cyan-950 hover:bg-cyan-900 text-cyan-300 border border-cyan-800/60 rounded-lg text-[10px] font-mono transition"
+                      >
+                        <Navigation className="w-3 h-3 text-cyan-400" />
+                        <span>Google Maps</span>
+                        <ExternalLink className="w-2.5 h-2.5" />
+                      </a>
+                    </div>
+                    <div className="text-white font-semibold text-xs">{currentIncident.location.address}</div>
+                    <div className="text-[10px] font-mono text-slate-400">
+                      Lat: {currentIncident.location.lat.toFixed(5)} • Lng: {currentIncident.location.lng.toFixed(5)} • Accuracy: ±{currentIncident.location.accuracyMeters || 6}m
+                    </div>
+                    {currentIncident.citizenName && (
+                      <div className="text-[11px] text-slate-300 pt-1 border-t border-slate-900 flex justify-between">
+                        <span>Caller: <span className="text-white font-bold">{currentIncident.citizenName}</span></span>
+                        <span className="font-mono text-emerald-400">{currentIncident.citizenPhone}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Primary Dispatch Unit Section */}
+                  <div className="bg-slate-950 p-3 rounded-2xl border border-slate-800 space-y-2">
+                    <div className="flex justify-between items-center">
+                      <div className="text-[10px] font-mono text-cyan-400 font-bold uppercase flex items-center gap-1.5">
+                        <Ambulance className="w-3.5 h-3.5" />
+                        <span>Primary Dispatched Fleet</span>
+                      </div>
+                      <button
+                        onClick={() => {
+                          setSelectedReassignUnitId('');
+                          setShowReassignModal(true);
+                        }}
+                        className="px-2 py-0.5 bg-slate-900 hover:bg-slate-800 text-cyan-300 border border-slate-700 rounded text-[10px] font-mono transition"
+                      >
+                        Reassign Unit
+                      </button>
+                    </div>
+
+                    {currentIncident.assignedResponder ? (
+                      <div className="flex justify-between items-center bg-slate-900/80 p-2.5 rounded-xl border border-slate-800">
+                        <div>
+                          <div className="font-bold text-white text-xs">{currentIncident.assignedResponder.name}</div>
+                          <div className="text-[10px] font-mono text-slate-400">
+                            {currentIncident.assignedResponder.callSign} • {currentIncident.assignedResponder.type} • Base: {currentIncident.assignedResponder.location.area}
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-[9px] uppercase font-mono text-slate-500">Live ETA</div>
+                          <div className="text-sm font-black font-mono text-cyan-400">
+                            {currentIncident.etaSeconds ? `${Math.round(currentIncident.etaSeconds / 60)}m` : '0m'}
                           </div>
                         </div>
                       </div>
-                    );
-                  })}
-              </div>
+                    ) : (
+                      <div className="p-3 bg-red-950/20 border border-red-500/30 rounded-xl flex justify-between items-center">
+                        <span className="text-red-300 text-xs">No primary unit assigned yet.</span>
+                        <button
+                          onClick={() => {
+                            setDispatchIncident(currentIncident);
+                            setShowDispatchModal(true);
+                          }}
+                          className="px-3 py-1 bg-red-600 hover:bg-red-500 text-white font-bold rounded-lg text-xs"
+                        >
+                          Smart Dispatch Now
+                        </button>
+                      </div>
+                    )}
+                  </div>
 
-              {/* Bottom Quick Incident Detail */}
-              {selectedIncident && (
-                <div className="p-3 border-t border-slate-800 bg-slate-950/90 text-xs">
-                  <div className="flex justify-between items-center mb-1.5">
-                    <span className="font-bold text-white uppercase font-mono">
-                      Selected: {selectedIncident.id}
-                    </span>
+                  {/* Coordinated Multi-Unit Tactical Backup Section */}
+                  <div className="bg-slate-950 p-3 rounded-2xl border border-slate-800 space-y-2">
+                    <div className="flex justify-between items-center">
+                      <div className="text-[10px] font-mono text-blue-300 font-bold uppercase flex items-center gap-1.5">
+                        <Users className="w-3.5 h-3.5 text-blue-400" />
+                        <span>Coordinated Backup Units ({currentIncident.coordinatingResponders?.length || 0})</span>
+                      </div>
+                      <button
+                        onClick={() => {
+                          setSelectedBackupUnitId('');
+                          setShowBackupModal(true);
+                        }}
+                        className="px-2 py-0.5 bg-blue-600 hover:bg-blue-500 text-white rounded text-[10px] font-mono flex items-center gap-1 transition"
+                      >
+                        <Plus className="w-3 h-3" /> Add Backup
+                      </button>
+                    </div>
+
+                    {currentIncident.coordinatingResponders && currentIncident.coordinatingResponders.length > 0 ? (
+                      <div className="space-y-1.5">
+                        {currentIncident.coordinatingResponders.map((item, idx) => (
+                          <div key={idx} className="flex justify-between items-center bg-slate-900/80 p-2 rounded-xl border border-slate-800 text-[11px]">
+                            <div>
+                              <span className="font-bold text-slate-200">{item.responder?.name || 'Tactical Unit'}</span>
+                              <span className="text-[9px] text-slate-400 ml-1.5 font-mono">({item.responder?.callSign})</span>
+                            </div>
+                            <span className="text-[9px] font-mono text-cyan-300 uppercase bg-slate-950 px-2 py-0.5 rounded border border-slate-800">
+                              {item.role}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-[11px] text-slate-500 italic p-2 bg-slate-900/40 rounded-xl text-center">
+                        No secondary units assigned. Dispatch Police PCR, Fire Tender, or ALS escort.
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Traffic Green Corridor Pre-emption Control */}
+                  <div className="p-3 rounded-2xl bg-slate-950 border border-slate-800 flex items-center justify-between">
+                    <div className="flex items-center gap-2.5">
+                      <Zap className={`w-5 h-5 ${currentIncident.greenCorridorActive ? 'text-emerald-400 animate-bounce' : 'text-slate-600'}`} />
+                      <div>
+                        <div className="font-bold text-xs text-white">
+                          Traffic Green Corridor {currentIncident.greenCorridorActive ? '(ENGAGED)' : '(STANDBY)'}
+                        </div>
+                        <div className="text-[10px] text-slate-400">
+                          {currentIncident.greenCorridorActive
+                            ? 'Hyderabad Traffic Police pre-empted signals along transit route (-40% ETA)'
+                            : 'Standard traffic flow. Click to pre-empt traffic signals.'}
+                        </div>
+                      </div>
+                    </div>
                     <button
                       onClick={() => {
-                        setDispatchIncident(selectedIncident);
-                        setShowDispatchModal(true);
+                        toggleGreenCorridor(currentIncident.id);
+                        sound.playRadioChirp();
                       }}
-                      className="text-[10px] text-cyan-400 underline font-mono hover:text-cyan-300"
+                      className={`px-3 py-1.5 rounded-lg text-[10px] font-bold font-mono transition border shrink-0 ${
+                        currentIncident.greenCorridorActive
+                          ? 'bg-emerald-600 hover:bg-emerald-500 text-white border-emerald-500'
+                          : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700'
+                      }`}
                     >
-                      Smart Score Breakdown
+                      {currentIncident.greenCorridorActive ? 'DEACTIVATE' : 'ENGAGE CORRIDOR'}
                     </button>
                   </div>
-                  <div className="text-[11px] text-slate-300 mb-1">
-                    <span className="text-slate-500">Address:</span> {selectedIncident.location.address}
-                  </div>
-                  <div className="flex gap-1.5 flex-wrap">
+
+                  {/* Command Actions Bar: Escalate, Family SMS, Form 112 Dossier, Resolve */}
+                  <div className="grid grid-cols-2 gap-2 pt-1">
                     <button
                       onClick={() => {
-                        setReportIncident(selectedIncident);
+                        setShowEscalateModal(true);
+                      }}
+                      className="p-2.5 bg-red-950/80 hover:bg-red-900 border border-red-700 text-red-200 rounded-xl text-xs font-bold font-mono flex items-center justify-center gap-1.5 transition active:scale-95"
+                    >
+                      <AlertTriangle className="w-3.5 h-3.5 text-red-400" />
+                      <span>Escalate (Tier {(currentIncident.escalationTier || 0) + 1})</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        const res = sendEmergencySmsBroadcast(currentIncident.id);
+                        sound.playAlert();
+                        setSmsToast({
+                          message: `Encrypted SMS broadcast transmitted to ${res.recipientCount} family contacts with live GPS telemetry.`,
+                          show: true
+                        });
+                        setTimeout(() => setSmsToast(null), 6000);
+                      }}
+                      className="p-2.5 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-200 rounded-xl text-xs font-bold font-mono flex items-center justify-center gap-1.5 transition active:scale-95"
+                    >
+                      <Bell className="w-3.5 h-3.5 text-amber-400" />
+                      <span>Alert Family (SMS)</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setReportIncident(currentIncident);
                         setShowReportModal(true);
                       }}
-                      className="px-2 py-1 bg-cyan-950 hover:bg-cyan-900 text-cyan-300 text-[10px] rounded border border-cyan-800/60 font-semibold"
+                      className="p-2.5 bg-cyan-950 hover:bg-cyan-900 border border-cyan-800/60 text-cyan-300 rounded-xl text-xs font-bold font-mono flex items-center justify-center gap-1.5 transition active:scale-95"
                     >
-                      Form 112 Report
+                      <FileText className="w-3.5 h-3.5 text-cyan-400" />
+                      <span>Form 112 Dossier</span>
                     </button>
+
                     <button
-                      onClick={() => escalateIncident(selectedIncident.id)}
-                      className="px-2 py-1 bg-slate-800 hover:bg-red-950 text-red-300 text-[10px] rounded border border-slate-700"
+                      onClick={() => {
+                        updateIncidentStatus(currentIncident.id, 'Resolved', 'Marked resolved by Command Supervisor');
+                        sound.playSuccessBeep();
+                      }}
+                      className="p-2.5 bg-emerald-950 hover:bg-emerald-900 border border-emerald-800/60 text-emerald-300 rounded-xl text-xs font-bold font-mono flex items-center justify-center gap-1.5 transition active:scale-95"
                     >
-                      Escalate (Tier {selectedIncident.escalationTier + 1})
-                    </button>
-                    <button
-                      onClick={() => updateIncidentStatus(selectedIncident.id, 'Resolved', 'Marked resolved by Command Supervisor')}
-                      className="px-2 py-1 bg-emerald-950 text-emerald-300 text-[10px] rounded border border-emerald-800/40"
-                    >
-                      Resolve Case
+                      <CheckCircle className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>Resolve Case</span>
                     </button>
                   </div>
+
+                  {/* AI Multimodal Clinical Triage Summary */}
+                  {currentIncident.aiTriage && (
+                    <div className="bg-slate-950 p-3 rounded-2xl border border-slate-800 space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-[10px] font-mono text-purple-400 font-bold uppercase flex items-center gap-1">
+                          <Sparkles className="w-3 h-3 text-purple-400" />
+                          <span>Gemini Clinical Triage</span>
+                        </span>
+                        <span className="text-[10px] font-mono text-cyan-300">
+                          Confidence: {currentIncident.aiTriage.confidence}%
+                        </span>
+                      </div>
+                      <p className="text-slate-300 text-xs italic bg-slate-900/60 p-2 rounded-xl border border-slate-800">
+                        "{currentIncident.aiTriage.patientConditionSummary}"
+                      </p>
+                      <div>
+                        <div className="text-[10px] font-mono text-slate-400 uppercase mb-1">Prescribed First-Aid:</div>
+                        <ul className="space-y-1">
+                          {currentIncident.aiTriage.firstAidInstructions.map((inst, i) => (
+                            <li key={i} className="text-slate-300 text-[11px] flex items-start gap-1.5">
+                              <span className="text-red-400">▸</span> {inst}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Incident Chronological Timeline */}
+                  <div className="bg-slate-950 p-3 rounded-2xl border border-slate-800 space-y-2">
+                    <div className="text-[10px] font-mono text-slate-400 font-bold uppercase">
+                      Audit Dispatch Timeline ({currentIncident.timeline.length})
+                    </div>
+                    <div className="space-y-1.5 font-mono text-[10px] max-h-36 overflow-y-auto pr-1">
+                      {currentIncident.timeline.map((entry, i) => (
+                        <div key={i} className="flex items-start justify-between border-b border-slate-900 pb-1">
+                          <div className="text-slate-300">
+                            <span className="text-cyan-400 font-bold">[{entry.status}]</span> {entry.note} ({entry.actor})
+                          </div>
+                          <div className="text-slate-500 shrink-0 ml-2">
+                            {new Date(entry.timestamp).toLocaleTimeString()}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
                 </div>
               )}
             </div>
@@ -472,9 +956,12 @@ export const AdminDashboard: React.FC = () => {
                 responders={responders}
                 hospitals={hospitals}
                 areaAlerts={areaAlerts}
-                selectedIncident={selectedIncident}
+                selectedIncident={currentIncident}
                 selectedResponder={selectedResponder}
-                onSelectIncident={(inc) => setSelectedIncident(inc)}
+                onSelectIncident={(inc) => {
+                  setSelectedIncident(inc);
+                  setPaneView('detail');
+                }}
                 onSelectResponder={(resp) => setSelectedResponder(resp)}
                 showHeatmap={showHeatmap}
                 interactive={true}
@@ -602,10 +1089,18 @@ export const AdminDashboard: React.FC = () => {
                   <h3 className="text-sm font-bold text-white mb-1">{alert.title}</h3>
                   <p className="text-xs text-slate-300 mb-3">{alert.description}</p>
                   
-                  <div className="bg-slate-950 p-2.5 rounded-xl border border-slate-800 flex justify-between text-[11px] font-mono text-slate-400">
+                  <div className="bg-slate-950 p-2.5 rounded-xl border border-slate-800 flex justify-between items-center text-[11px] font-mono text-slate-400">
                     <div>Zone: <span className="text-white font-bold">{alert.center.area}</span></div>
                     <div>Radius: <span className="text-cyan-400 font-bold">{alert.radiusKm} km</span></div>
-                    <div>Status: <span className="text-emerald-400 font-bold">Active Broadcast</span></div>
+                    <button
+                      onClick={() => {
+                        revokeAreaAlert(alert.id);
+                        sound.playWarningBeep();
+                      }}
+                      className="px-2.5 py-1 bg-red-950/80 hover:bg-red-900 border border-red-800/80 text-red-300 rounded font-semibold text-[10px] transition"
+                    >
+                      Revoke Alert
+                    </button>
                   </div>
                 </div>
               ))}
@@ -1133,6 +1628,245 @@ export const AdminDashboard: React.FC = () => {
                 className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold rounded-xl text-xs"
               >
                 Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Toast Notification for SMS Broadcast */}
+      {smsToast && (
+        <div className="fixed bottom-6 right-6 z-[9999] bg-emerald-950/95 border border-emerald-500/50 text-emerald-200 p-4 rounded-2xl shadow-2xl flex items-center gap-3 animate-in fade-in slide-in-from-bottom-2">
+          <CheckCircle className="w-5 h-5 text-emerald-400 shrink-0" />
+          <div className="text-xs font-mono font-semibold">{smsToast.message}</div>
+        </div>
+      )}
+
+      {/* Coordinated Backup Unit Dispatch Modal */}
+      {showBackupModal && currentIncident && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-3xl p-5 shadow-2xl">
+            <div className="flex justify-between items-center mb-2 pb-2 border-b border-slate-800">
+              <div className="flex items-center gap-2">
+                <Users className="w-4 h-4 text-blue-400" />
+                <h3 className="text-sm font-bold text-white uppercase font-mono">
+                  Dispatch Coordinated Backup ({currentIncident.id})
+                </h3>
+              </div>
+              <button 
+                onClick={() => setShowBackupModal(false)}
+                className="text-slate-400 hover:text-white text-sm"
+              >
+                ✕
+              </button>
+            </div>
+            <p className="text-xs text-slate-400 mb-3">
+              Assign secondary police, fire, or paramedic backup to coordinate on ground.
+            </p>
+
+            <div className="space-y-3 mb-4">
+              <div>
+                <label className="text-[10px] font-mono text-slate-400 uppercase">Tactical Backup Role</label>
+                <select
+                  value={backupRole}
+                  onChange={e => setBackupRole(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white mt-1"
+                >
+                  <option value="Police PCR Escort">Police PCR Escort</option>
+                  <option value="Fire Suppression Tender">Fire Suppression Tender</option>
+                  <option value="Secondary Paramedic Unit">Secondary Paramedic Unit</option>
+                  <option value="Traffic Green Corridor Escort">Traffic Green Corridor Escort</option>
+                  <option value="Mass-Casualty Triage Support">Mass-Casualty Triage Support</option>
+                  <option value="Disaster Hazmat Team">Disaster Hazmat Team</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="text-[10px] font-mono text-slate-400 uppercase">Select Available Tactical Unit</label>
+                <div className="space-y-1.5 max-h-52 overflow-y-auto mt-1 pr-1">
+                  {responders
+                    .filter(r => r.id !== currentIncident.assignedResponder?.id)
+                    .map(resp => (
+                      <div
+                        key={resp.id}
+                        onClick={() => {
+                          assignCoordinatingResponder(currentIncident.id, resp.id, backupRole);
+                          sound.playRadioChirp();
+                          setShowBackupModal(false);
+                        }}
+                        className="p-2.5 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-800 cursor-pointer flex justify-between items-center transition"
+                      >
+                        <div>
+                          <div className="text-xs font-bold text-white">{resp.name}</div>
+                          <div className="text-[10px] text-slate-400 font-mono">
+                            {resp.callSign} • {resp.type} • {resp.location.area}
+                          </div>
+                        </div>
+                        <button className="px-2.5 py-1 bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-bold rounded">
+                          Assign
+                        </button>
+                      </div>
+                    ))}
+                </div>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setShowBackupModal(false)}
+              className="w-full py-2 bg-slate-800 text-white rounded-xl text-xs font-semibold"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Primary Unit Reassignment Modal */}
+      {showReassignModal && currentIncident && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-3xl p-5 shadow-2xl">
+            <div className="flex justify-between items-center mb-2 pb-2 border-b border-slate-800">
+              <div className="flex items-center gap-2">
+                <Ambulance className="w-4 h-4 text-cyan-400" />
+                <h3 className="text-sm font-bold text-white uppercase font-mono">
+                  Reassign Primary Fleet ({currentIncident.id})
+                </h3>
+              </div>
+              <button 
+                onClick={() => setShowReassignModal(false)}
+                className="text-slate-400 hover:text-white text-sm"
+              >
+                ✕
+              </button>
+            </div>
+            <p className="text-xs text-slate-400 mb-3">
+              Change primary dispatched unit for this emergency ticket.
+            </p>
+
+            <div className="space-y-2 max-h-60 overflow-y-auto mb-4 pr-1">
+              {responders.map(resp => {
+                const isCurrent = resp.id === currentIncident.assignedResponder?.id;
+                return (
+                  <div
+                    key={resp.id}
+                    onClick={() => {
+                      if (!isCurrent) {
+                        reassignResponder(currentIncident.id, resp.id);
+                        sound.playAlert();
+                        setShowReassignModal(false);
+                      }
+                    }}
+                    className={`p-2.5 rounded-xl border flex justify-between items-center transition ${
+                      isCurrent
+                        ? 'bg-slate-900/60 border-slate-700 opacity-60 cursor-not-allowed'
+                        : 'bg-slate-950 hover:bg-slate-800 border-slate-800 cursor-pointer'
+                    }`}
+                  >
+                    <div>
+                      <div className="text-xs font-bold text-white">
+                        {resp.name} {isCurrent && '(Currently Assigned)'}
+                      </div>
+                      <div className="text-[10px] text-slate-400 font-mono">
+                        {resp.callSign} • {resp.type} • {resp.location.area}
+                      </div>
+                    </div>
+                    {!isCurrent && (
+                      <button className="px-2.5 py-1 bg-cyan-600 hover:bg-cyan-500 text-white text-[10px] font-bold rounded">
+                        Select
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            <button
+              onClick={() => setShowReassignModal(false)}
+              className="w-full py-2 bg-slate-800 text-white rounded-xl text-xs font-semibold"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* SLA Multi-Tier Escalation Modal */}
+      {showEscalateModal && currentIncident && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="w-full max-w-lg bg-slate-900 border border-slate-800 rounded-3xl p-5 shadow-2xl">
+            <div className="flex justify-between items-center mb-3 pb-2 border-b border-slate-800">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-red-500 animate-pulse" />
+                <h3 className="text-sm font-bold text-white uppercase font-mono">
+                  SLA Priority Escalation Protocol ({currentIncident.id})
+                </h3>
+              </div>
+              <button 
+                onClick={() => setShowEscalateModal(false)}
+                className="text-slate-400 hover:text-white text-sm"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-3 mb-4 text-xs">
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { tier: 1, title: 'Tier 1: Perimeter', desc: 'Expand responder radius to 25km + Multi-agency standby.' },
+                  { tier: 2, title: 'Tier 2: Police Escort', desc: 'Page Zonal Supervisor + Armed Police PCR escort.' },
+                  { tier: 3, title: 'Tier 3: EOC Siren', desc: 'Disaster Command & City Emergency Operations Alarm.' },
+                ].map(item => (
+                  <div
+                    key={item.tier}
+                    onClick={() => setEscalateTier(item.tier)}
+                    className={`p-3 rounded-2xl border cursor-pointer transition flex flex-col justify-between ${
+                      escalateTier === item.tier
+                        ? 'bg-red-950/80 border-red-500 text-white shadow-lg shadow-red-950/50'
+                        : 'bg-slate-950 border-slate-800 text-slate-300 hover:bg-slate-900'
+                    }`}
+                  >
+                    <div>
+                      <div className="font-bold font-mono text-[11px] mb-1">{item.title}</div>
+                      <div className="text-[10px] text-slate-400">{item.desc}</div>
+                    </div>
+                    <div className="mt-2 text-right">
+                      <span className={`text-[9px] font-mono font-bold px-1.5 py-0.5 rounded ${
+                        escalateTier === item.tier ? 'bg-red-600 text-white' : 'bg-slate-800 text-slate-400'
+                      }`}>
+                        Tier {item.tier}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div>
+                <label className="text-[10px] font-mono text-slate-400 uppercase">Operational Reason</label>
+                <input
+                  type="text"
+                  value={escalateReason}
+                  onChange={e => setEscalateReason(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white mt-1"
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-2">
+              <button
+                onClick={() => {
+                  escalateIncident(currentIncident.id, escalateTier, escalateReason);
+                  sound.playEmergencySiren();
+                  setShowEscalateModal(false);
+                }}
+                className="flex-1 py-2.5 bg-red-600 hover:bg-red-500 text-white text-xs font-bold rounded-xl shadow-lg shadow-red-600/30 transition"
+              >
+                Execute Tier {escalateTier} Escalation
+              </button>
+              <button
+                onClick={() => setShowEscalateModal(false)}
+                className="px-4 py-2.5 bg-slate-800 text-slate-300 text-xs font-semibold rounded-xl"
+              >
+                Cancel
               </button>
             </div>
           </div>

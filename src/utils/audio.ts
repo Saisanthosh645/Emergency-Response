@@ -112,14 +112,107 @@ class SoundEngine {
       // safe ignore
     }
   }
+
+  // 5. Radio Squelch & Chirp for Push-To-Talk Comms
+  playRadioChirp() {
+    try {
+      this.initCtx();
+      if (!this.ctx) return;
+      const now = this.ctx.currentTime;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(1200, now);
+      osc.frequency.setValueAtTime(1800, now + 0.05);
+      osc.frequency.setValueAtTime(800, now + 0.1);
+      gain.gain.setValueAtTime(0.08, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.18);
+    } catch {
+      // safe ignore
+    }
+  }
+
+  // 6. Loud Dual-Tone Emergency Ambulance Air Horn & Siren Blare
+  playAmbulanceHorn(durationSec: number = 3.5) {
+    try {
+      this.initCtx();
+      if (!this.ctx) return;
+      const now = this.ctx.currentTime;
+
+      // Dual-tone heavy air horn harmonics (Standard Emergency Vehicle Horn)
+      const hornFrequencies = [380, 475, 760];
+      hornFrequencies.forEach((freq, idx) => {
+        const osc = this.ctx!.createOscillator();
+        const gain = this.ctx!.createGain();
+        osc.type = idx === 0 ? 'sawtooth' : 'triangle';
+        osc.frequency.setValueAtTime(freq, now);
+
+        // Subtle compressor flutter
+        osc.frequency.linearRampToValueAtTime(freq * 1.02, now + 0.12);
+        osc.frequency.linearRampToValueAtTime(freq * 0.98, now + 0.9);
+        osc.frequency.linearRampToValueAtTime(freq, now + 1.8);
+
+        gain.gain.setValueAtTime(0.24, now);
+        gain.gain.setValueAtTime(0.24, now + durationSec - 0.4);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + durationSec);
+
+        osc.connect(gain);
+        gain.connect(this.ctx!.destination);
+        osc.start(now);
+        osc.stop(now + durationSec);
+      });
+
+      // Layered sweeping 108 Indian emergency siren
+      this.playEmergencySiren(durationSec);
+    } catch {
+      // safe ignore
+    }
+  }
+
+  playAlert() {
+    this.playWarningBeep();
+  }
+
+  playNotificationBeep() {
+    this.playWarningBeep();
+  }
+
+  playSuccessBeep() {
+    this.playSuccessChime();
+  }
+
+  // 7. Subtle Button Tap Feedback
+  playButtonTap(freq: number = 750) {
+    try {
+      this.initCtx();
+      if (!this.ctx) return;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+      gain.gain.setValueAtTime(0.08, this.ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.06);
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start();
+      osc.stop(this.ctx.currentTime + 0.06);
+    } catch {
+      // safe ignore
+    }
+  }
 }
 
 export const sound = new SoundEngine();
 
-export function triggerHaptic(pattern: number[] = [100, 50, 100]) {
+export function triggerHaptic(pattern: number[] | string = [100, 50, 100]) {
   if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
     try {
-      navigator.vibrate(pattern);
+      const p = Array.isArray(pattern) ? pattern : pattern === 'success' ? [50, 50, 50] : [100, 50, 100];
+      navigator.vibrate(p);
     } catch {
       // ignore
     }
