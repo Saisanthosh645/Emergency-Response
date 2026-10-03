@@ -1,36 +1,32 @@
 @import "tailwindcss";
 
-/* Leaflet Clean Light Theme Overrides & Custom Tooltips */
-.custom-map-tooltip {
-  background-color: #ffffff !important;
-  color: #0f172a !important;
-  border: 1px solid #e2e8f0 !important;
-  border-radius: 8px !important;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1) !important;
-  padding: 6px 10px !important;
+/* Leaflet — satellite map theme */
+.leaflet-container {
+  background-color: #0a0a0f !important;
   font-family: inherit !important;
 }
 
-.custom-map-tooltip::before {
-  border-top-color: #ffffff !important;
-}
-
+/* Dark glass popups for satellite map */
 .leaflet-popup-content-wrapper {
-  background-color: #ffffff !important;
-  color: #0f172a !important;
-  border: 1px solid #e2e8f0 !important;
-  border-radius: 12px !important;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1) !important;
+  background-color: rgba(10,14,24,0.92) !important;
+  color: #f1f5f9 !important;
+  border: 1px solid rgba(255,255,255,0.12) !important;
+  border-radius: 14px !important;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.6) !important;
+  backdrop-filter: blur(12px) !important;
 }
 
 .leaflet-popup-tip {
-  background-color: #ffffff !important;
-  border: 1px solid #e2e8f0 !important;
+  background-color: rgba(10,14,24,0.92) !important;
 }
 
-.leaflet-container {
-  background-color: #f1f5f9 !important;
-  font-family: inherit !important;
+.leaflet-popup-close-button {
+  color: #94a3b8 !important;
+}
+
+/* Hide Leaflet attribution (we credit ESRI elsewhere) */
+.leaflet-control-attribution {
+  display: none !important;
 }
 
 /* Custom scrollbars */
