@@ -48,3 +48,36 @@
 ::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
 }
+
+/* ── Shimmer skeleton loading utility ── */
+@keyframes shimmer {
+  0%   { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+
+.skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(148,163,184,0.08) 25%,
+    rgba(148,163,184,0.18) 50%,
+    rgba(148,163,184,0.08) 75%
+  );
+  background-size: 800px 100%;
+  animation: shimmer 1.6s ease-in-out infinite;
+}
+
+/* Dark-mode variant */
+.skeleton-shimmer-dark {
+  background: linear-gradient(
+    90deg,
+    rgba(30,41,59,0.6) 25%,
+    rgba(51,65,85,0.9) 50%,
+    rgba(30,41,59,0.6) 75%
+  );
+  background-size: 800px 100%;
+  animation: shimmer 1.6s ease-in-out infinite;
+}
+
+/* No-scrollbar helper */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }

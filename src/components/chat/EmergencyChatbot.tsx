@@ -609,12 +609,54 @@ export const EmergencyChatbot: React.FC = () => {
               </div>
             ))}
 
-            {/* Typing Indicator */}
+            {/* Premium Typing / Thinking Indicator */}
             {isLoading && (
-              <div className="flex items-center gap-2 p-3 rounded-2xl bg-slate-900/80 border border-slate-800 w-24">
-                <span className="w-2 h-2 rounded-full bg-red-400 animate-bounce" />
-                <span className="w-2 h-2 rounded-full bg-rose-400 animate-bounce [animation-delay:0.2s]" />
-                <span className="w-2 h-2 rounded-full bg-amber-400 animate-bounce [animation-delay:0.4s]" />
+              <div className="flex items-start gap-2.5">
+                {/* Bot avatar */}
+                <div className="w-7 h-7 rounded-xl bg-gradient-to-br from-red-600 to-rose-700 flex items-center justify-center shrink-0 shadow-md shadow-red-600/30">
+                  <svg width="14" height="10" viewBox="0 0 34 24" fill="none">
+                    <polyline points="0,12 6,12 9,4 12,20 15,1 18,23 21,12 34,12" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </div>
+                <div className="flex flex-col gap-1.5 bg-slate-900/90 border border-slate-800/80 rounded-2xl rounded-bl-sm px-3.5 py-3 min-w-[140px]">
+                  {/* ECG line */}
+                  <svg width="110" height="20" viewBox="0 0 110 20" fill="none" className="overflow-visible">
+                    <polyline
+                      points="0,10 18,10 22,3 26,17 30,0 34,19 38,10 110,10"
+                      stroke="#f87171"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeDasharray="140"
+                      strokeDashoffset="140"
+                      style={{ animation: 'ecg-chat 1.6s ease-in-out infinite' }}
+                    />
+                    <style>{`
+                      @keyframes ecg-chat {
+                        0%   { stroke-dashoffset: 140; opacity:1; }
+                        55%  { stroke-dashoffset: 0;   opacity:1; }
+                        80%  { stroke-dashoffset: 0;   opacity:0.6; }
+                        100% { stroke-dashoffset: 140; opacity:0; }
+                      }
+                    `}</style>
+                  </svg>
+                  {/* Dot row + label */}
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1">
+                      {[0,1,2].map(i => (
+                        <span
+                          key={i}
+                          className="w-1.5 h-1.5 rounded-full animate-bounce"
+                          style={{
+                            animationDelay: `${i * 0.18}s`,
+                            background: ['#f87171','#fb7185','#fbbf24'][i]
+                          }}
+                        />
+                      ))}
+                    </div>
+                    <span className="text-[9px] font-mono text-slate-500 tracking-wide">AI thinking…</span>
+                  </div>
+                </div>
               </div>
             )}
 
